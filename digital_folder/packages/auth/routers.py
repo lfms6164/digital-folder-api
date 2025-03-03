@@ -28,7 +28,8 @@ class AuthRouter:
             return Token(access_token=token, token_type="bearer")
         else:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid credentials"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Login failed - Invalid credentials",
             )
 
     @staticmethod
