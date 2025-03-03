@@ -32,9 +32,3 @@ TagOut = create_schema_with_exclusions(
     base_schema=TagBase,
     excluding_fields=[],
 )
-
-TagID = create_schema_with_exclusions(
-    schema_name="TagID",
-    base_schema=TagBase,
-    excluding_fields=["name", "icon", "color"],
-)
