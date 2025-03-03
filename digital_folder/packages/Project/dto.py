@@ -15,7 +15,7 @@ from digital_folder.packages.Project.schemas import (
 )
 from digital_folder.packages.Relation.dto import RelationDTO
 from digital_folder.packages.Tag.dto import TagDTO
-from digital_folder.packages.Tag.schemas import TagID, TagOut
+from digital_folder.packages.Tag.schemas import TagOut
 
 
 class ProjectDTO:
@@ -54,8 +54,8 @@ class ProjectDTO:
         add_to_db(project_db_data, project_settings.EXCEL_DB_PATH, "Projects")
 
         if project_obj.tags:
-            for tag_id in project_obj.tags:
-                RelationDTO.create(new_project_id, tag_id)
+            for tag in project_obj.tags:
+                RelationDTO.create(new_project_id, tag.id)
 
         return project_obj
 
@@ -71,7 +71,7 @@ class ProjectDTO:
                 RelationDTO.delete_by_id(project_id=id_, tag_id=relation)
 
             for tag in project_data.tags:
-                RelationDTO.create(UUID(id_), UUID(tag["id"]))
+                RelationDTO.create(UUID(id_), tag.id)
 
         return ProjectDTO.get_by_id(id_)
 
@@ -87,19 +87,23 @@ class ProjectDTO:
     def project_parser(
         project: Any, uuid: Optional[UUID] = None, tags: Optional[List[str]] = None
     ) -> ProjectOut:
-        teste = (
+        parsed_project = (
             {
                 "id": uuid,
                 "name": project.name,
                 "image": project.image if project.image else None,
+                "introduction": project.introduction if project.introduction else None,
                 "description": project.description if project.description else None,
-                "tags": ProjectDTO.get_tags_ids(project.tags) if project.tags else None,
+                "tags": project.tags if project.tags else None,
             }
             if isinstance(project, (ProjectCreate, ProjectPatch))
             else {
                 "id": project["id"],
                 "name": project["name"],
                 "image": project["image"] if project["image"] else None,
+                "introduction": (
+                    project["introduction"] if project["introduction"] else None
+                ),
                 "description": (
                     project["description"] if project["description"] else None
                 ),
@@ -108,20 +112,13 @@ class ProjectDTO:
         )
 
         return ProjectOut(
-            id=teste["id"],
-            name=teste["name"],
-            image=teste["image"],
-            description=teste["description"],
-            tags=teste["tags"],
+            id=parsed_project["id"],
+            name=parsed_project["name"],
+            image=parsed_project["image"],
+            introduction=parsed_project["introduction"],
+            description=parsed_project["description"],
+            tags=parsed_project["tags"],
         )
-
-    @staticmethod
-    def get_tags_ids(tags: List[TagOut]) -> List[TagID]:
-        tag_ids = []
-        for tag in tags:
-            tag_ids.append(tag["id"])
-
-        return tag_ids
 
     @staticmethod
     def read_tags_from_db(tag_ids: List[str]) -> List[TagOut]:

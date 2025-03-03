@@ -58,7 +58,7 @@ class TagDTO:
 
     @staticmethod
     def tag_parser(tag: Any, uuid: Optional[UUID] = None) -> TagOut:
-        teste = (
+        parsed_tag = (
             {
                 "id": uuid,
                 "name": tag.name if tag.name else None,
@@ -75,5 +75,8 @@ class TagDTO:
         )
 
         return TagOut(
-            id=teste["id"], name=teste["name"], icon=teste["icon"], color=teste["color"]
+            id=parsed_tag["id"],
+            name=parsed_tag["name"],
+            icon=parsed_tag["icon"],
+            color=parsed_tag["color"],
         )

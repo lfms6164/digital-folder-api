@@ -35,9 +35,11 @@ class RelationDTO:
 
     @staticmethod
     def relation_parser(project_id: UUID, tag_id: UUID) -> RelationBase:
-        teste = {
+        parsed_relation = {
             "project_id": project_id,
             "tag_id": tag_id,
         }
 
-        return RelationBase(project_id=teste["project_id"], tag_id=teste["tag_id"])
+        return RelationBase(
+            project_id=parsed_relation["project_id"], tag_id=parsed_relation["tag_id"]
+        )
