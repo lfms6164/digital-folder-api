@@ -1,12 +1,10 @@
 """Core settings"""
 
-from typing import List
-
-from pydantic import MySQLDsn, HttpUrl, SecretStr
+from pydantic import MySQLDsn, SecretStr
+from pydantic.v1 import BaseSettings
 
 from digital_folder import __version__
 from digital_folder.helpers.helper_methods import get_scrt_key
-from pydantic.v1 import BaseSettings, AnyHttpUrl
 
 
 class ProjectSettingsBase(BaseSettings):
@@ -24,6 +22,7 @@ class ProjectSettings(ProjectSettingsBase):
 
     mysql_uri: MySQLDsn = MySQLDsn("mysql+pymysql://root:pswrd@localhost")
     EXCEL_DB_PATH = r"C:\Users\Player One\repos\DigitalFolder\digitalfolder_db.xlsx"
+    static_folder_path = r"C:\Users\Player One\repos\DigitalFolder\images"
 
     jwt_secret_key: SecretStr = get_scrt_key(EXCEL_DB_PATH)
     jwt_algorithm: str = "HS256"

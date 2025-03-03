@@ -3,8 +3,9 @@
 from typing import List
 
 from fastapi import FastAPI
+from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware import Middleware
+from fastapi.staticfiles import StaticFiles
 
 from digital_folder.api.api import api_router
 from digital_folder.core.config import project_settings
@@ -35,6 +36,12 @@ def create_app() -> FastAPI:
         docs_url="/",
         middleware=make_middleware(),
         swagger_ui_parameters={"docExpansion": "none"},
+    )
+
+    app.mount(
+        "/static",
+        StaticFiles(directory=project_settings.static_folder_path),
+        name="static",
     )
 
     app.include_router(api_router, prefix="/api")
