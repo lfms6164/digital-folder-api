@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from digital_folder.helpers.helper_methods import create_schema_with_exclusions
+from digital_folder.helpers.schema_utils import create_schema_with_exclusions
 
 
 class TagBase(BaseModel):

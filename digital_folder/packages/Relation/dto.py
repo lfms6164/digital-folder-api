@@ -2,9 +2,9 @@ from typing import List
 from uuid import UUID
 
 from digital_folder.core.config import project_settings
-from digital_folder.helpers.helper_methods import (
+from digital_folder.helpers.db_operations import (
     add_to_db,
-    delete_relation_from_db,
+    delete_from_db,
     read_from_db,
 )
 from digital_folder.packages.Relation.schemas import RelationBase
@@ -23,15 +23,13 @@ class RelationDTO:
     @staticmethod
     def create(project_id: UUID, tag_id: UUID) -> RelationBase:
         relation_obj = RelationDTO.relation_parser(project_id, tag_id)
-        add_to_db(relation_obj, project_settings.EXCEL_DB_PATH, "ProjectTagRelation")
+        add_to_db(relation_obj)
 
         return relation_obj
 
     @staticmethod
     def delete_by_id(project_id: str, tag_id: str) -> None:
-        delete_relation_from_db(
-            project_id, tag_id, project_settings.EXCEL_DB_PATH, "ProjectTagRelation"
-        )
+        delete_from_db(project_id=project_id, tag_id=tag_id)
 
     @staticmethod
     def relation_parser(project_id: UUID, tag_id: UUID) -> RelationBase:

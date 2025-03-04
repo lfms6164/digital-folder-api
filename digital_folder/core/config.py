@@ -4,7 +4,7 @@ from pydantic import MySQLDsn, SecretStr
 from pydantic.v1 import BaseSettings
 
 from digital_folder import __version__
-from digital_folder.helpers.helper_methods import get_scrt_key
+from digital_folder.helpers.secrets import get_scrt_key
 
 
 class ProjectSettingsBase(BaseSettings):

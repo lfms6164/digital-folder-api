@@ -2,11 +2,11 @@ from typing import List, Any, Optional
 from uuid import uuid4, UUID
 
 from digital_folder.core.config import project_settings
-from digital_folder.helpers.helper_methods import (
+from digital_folder.helpers.db_operations import (
     add_to_db,
     delete_from_db,
+    patch_db,
     read_from_db,
-    patch_db_entry,
 )
 from digital_folder.packages.Project.schemas import (
     ProjectOut,
@@ -47,11 +47,11 @@ class ProjectDTO:
         new_project_id = uuid4()
 
         project_obj = ProjectDTO.project_parser(project, new_project_id)
-        project_db_data = project_obj.dict(
+        project_dict = project_obj.dict(
             exclude={"tags"}
         )  # No need to store tags data on the projects table since there is a relations table
 
-        add_to_db(project_db_data, project_settings.EXCEL_DB_PATH, "Projects")
+        add_to_db(project_dict)
 
         if project_obj.tags:
             for tag in project_obj.tags:
@@ -61,7 +61,7 @@ class ProjectDTO:
 
     @staticmethod
     def edit_by_id(id_: str, project_data: ProjectPatch) -> ProjectOut:
-        patch_db_entry(id_, project_data, project_settings.EXCEL_DB_PATH, "Projects")
+        patch_db(id_, project_data)
 
         # TODO - Optimize this logic
         if project_data.tags or project_data.tags == []:
@@ -77,7 +77,7 @@ class ProjectDTO:
 
     @staticmethod
     def delete_by_id(id_: str) -> None:
-        delete_from_db(id_, project_settings.EXCEL_DB_PATH, "Projects")
+        delete_from_db(project_id=id_)
         relations = RelationDTO.get_entity_relations(id_, "project_id")
 
         for relation in relations:
