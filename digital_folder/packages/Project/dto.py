@@ -21,7 +21,7 @@ from digital_folder.packages.Tag.schemas import TagOut
 class ProjectDTO:
     @staticmethod
     def list() -> List[ProjectOut]:
-        projects_df = read_from_db(project_settings.EXCEL_DB_PATH, "Projects")
+        projects_df = read_from_db("Projects")
 
         projects = []
         for _, project in projects_df.iterrows():
@@ -33,7 +33,7 @@ class ProjectDTO:
 
     @staticmethod
     def get_by_id(project_id: str) -> ProjectOut:
-        projects_df = read_from_db(project_settings.EXCEL_DB_PATH, "Projects")
+        projects_df = read_from_db("Projects")
 
         project_obj = ProjectDTO.project_parser(
             projects_df[projects_df["id"] == project_id].iloc[0].to_dict(),

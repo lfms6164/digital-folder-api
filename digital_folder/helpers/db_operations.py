@@ -4,6 +4,7 @@ from uuid import UUID
 import pandas as pd
 from fastapi import HTTPException
 from openpyxl.reader.excel import load_workbook
+from pandas import DataFrame
 from pydantic import BaseModel
 
 from digital_folder.core.config import project_settings
@@ -11,9 +12,13 @@ from digital_folder.packages.Project.schemas import ProjectPatch
 from digital_folder.packages.Tag.schemas import TagPatch
 
 
-def read_from_db(db_path: str, sheet_name: str) -> Any:
+def read_from_db(sheet_name: str) -> DataFrame:
 
-    return pd.read_excel(db_path, sheet_name=sheet_name).dropna(how="all").fillna("")
+    return (
+        pd.read_excel(project_settings.EXCEL_DB_PATH, sheet_name=sheet_name)
+        .dropna(how="all")
+        .fillna("")
+    )
 
 
 def add_to_db(item: Any):

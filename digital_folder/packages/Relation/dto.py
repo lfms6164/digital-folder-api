@@ -14,7 +14,7 @@ class RelationDTO:
     @staticmethod
     def get_entity_relations(entity_id: str, entity_name: str) -> List[str]:
         other_entity_name = "tag_id" if entity_name == "project_id" else "project_id"
-        relation_df = read_from_db(project_settings.EXCEL_DB_PATH, "ProjectTagRelation")
+        relation_df = read_from_db("ProjectTagRelation")
 
         return relation_df[relation_df[f"{entity_name}"] == entity_id][
             f"{other_entity_name}"

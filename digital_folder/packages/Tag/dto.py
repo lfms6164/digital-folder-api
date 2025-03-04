@@ -15,7 +15,7 @@ from digital_folder.packages.Tag.schemas import TagCreate, TagOut, TagPatch
 class TagDTO:
     @staticmethod
     def list() -> List[TagOut]:
-        tags_df = read_from_db(project_settings.EXCEL_DB_PATH, "Tags")
+        tags_df = read_from_db("Tags")
 
         tags = []
         for _, row in tags_df.iterrows():
@@ -26,7 +26,7 @@ class TagDTO:
 
     @staticmethod
     def get_by_id(tag_id: str) -> TagOut:
-        tags_df = read_from_db(project_settings.EXCEL_DB_PATH, "Tags")
+        tags_df = read_from_db("Tags")
 
         tag_obj = TagDTO.tag_parser(tags_df[tags_df["id"] == tag_id].iloc[0].to_dict())
 
