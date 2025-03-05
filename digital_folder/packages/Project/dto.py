@@ -1,7 +1,6 @@
 from typing import List, Any, Optional
 from uuid import uuid4, UUID
 
-from digital_folder.core.config import project_settings
 from digital_folder.helpers.db_operations import (
     add_to_db,
     delete_from_db,
@@ -32,11 +31,11 @@ class ProjectDTO:
         return projects
 
     @staticmethod
-    def get_by_id(project_id: str) -> ProjectOut:
+    def get_by_id(project_id: UUID) -> ProjectOut:
         projects_df = read_from_db("Projects")
 
         project_obj = ProjectDTO.project_parser(
-            projects_df[projects_df["id"] == project_id].iloc[0].to_dict(),
+            project=projects_df[projects_df["id"] == str(project_id)].iloc[0].to_dict(),
             tags=RelationDTO.get_entity_relations(project_id, "project_id"),
         )
 
@@ -46,7 +45,9 @@ class ProjectDTO:
     def create(project: ProjectCreate) -> ProjectOut:
         new_project_id = uuid4()
 
-        project_obj = ProjectDTO.project_parser(project, new_project_id)
+        project_obj = ProjectDTO.project_parser(
+            project=project, project_id=new_project_id
+        )
         project_dict = project_obj.dict(
             exclude={"tags"}
         )  # No need to store tags data on the projects table since there is a relations table
@@ -60,36 +61,40 @@ class ProjectDTO:
         return project_obj
 
     @staticmethod
-    def edit_by_id(id_: str, project_data: ProjectPatch) -> ProjectOut:
-        patch_db(id_, project_data)
+    def edit_by_id(project_id: UUID, project_data: ProjectPatch) -> ProjectOut:
+        patch_db(project_id, project_data)
 
-        # TODO - Optimize this logic
-        if project_data.tags or project_data.tags == []:
-            relations = RelationDTO.get_entity_relations(id_, "project_id")
+        if project_data.tags is not None:
+            relations = set(RelationDTO.get_entity_relations(project_id, "project_id"))
+            new_tags = set(tag.id for tag in project_data.tags)
 
-            for relation in relations:
-                RelationDTO.delete_by_id(project_id=id_, tag_id=relation)
+            tags_to_delete = relations - new_tags
+            for tag_id in tags_to_delete:
+                RelationDTO.delete_by_id(project_id=project_id, tag_id=tag_id)
 
-            for tag in project_data.tags:
-                RelationDTO.create(UUID(id_), tag.id)
+            tags_to_add = new_tags - relations
+            for tag_id in tags_to_add:
+                RelationDTO.create(project_id, tag_id)
 
-        return ProjectDTO.get_by_id(id_)
+        return ProjectDTO.get_by_id(project_id)
 
     @staticmethod
-    def delete_by_id(id_: str) -> None:
-        delete_from_db(project_id=id_)
-        relations = RelationDTO.get_entity_relations(id_, "project_id")
+    def delete_by_id(project_id: UUID) -> None:
+        delete_from_db(project_id=project_id)
+        relations = RelationDTO.get_entity_relations(project_id, "project_id")
 
         for relation in relations:
-            RelationDTO.delete_by_id(project_id=id_, tag_id=relation)
+            RelationDTO.delete_by_id(project_id=project_id, tag_id=relation)
 
     @staticmethod
     def project_parser(
-        project: Any, uuid: Optional[UUID] = None, tags: Optional[List[str]] = None
+        project: Any,
+        project_id: Optional[UUID] = None,
+        tags: Optional[List[UUID]] = None,
     ) -> ProjectOut:
         parsed_project = (
             {
-                "id": uuid,
+                "id": project_id,
                 "name": project.name,
                 "image": project.image if project.image else None,
                 "introduction": project.introduction if project.introduction else None,
@@ -121,7 +126,7 @@ class ProjectDTO:
         )
 
     @staticmethod
-    def read_tags_from_db(tag_ids: List[str]) -> List[TagOut]:
+    def read_tags_from_db(tag_ids: List[UUID]) -> List[TagOut]:
         tag_objects = []
         for tag_id in tag_ids:
             if tag_id:
