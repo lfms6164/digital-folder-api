@@ -57,7 +57,7 @@ def add_to_db(item: Any):
     wb.close()
 
 
-def patch_db(id_: str, patch_data: Union[ProjectPatch, TagPatch]):
+def patch_db(id_: UUID, patch_data: Union[ProjectPatch, TagPatch]):
     sheet_map = {
         "TagPatch": "Tags",
         "ProjectPatch": "Projects",
@@ -72,7 +72,7 @@ def patch_db(id_: str, patch_data: Union[ProjectPatch, TagPatch]):
 
     row_to_patch = None
     for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row, values_only=False):
-        if str(row[0].value) == id_:
+        if str(row[0].value) == str(id_):
             row_to_patch = row
             break
 
@@ -111,7 +111,7 @@ def delete_from_db(**ids):
     row_to_delete = None
     for row in range(2, sheet.max_row + 1):
         if all(
-            str(sheet.cell(row=row, column=i + 1).value) == ids[key]
+            str(sheet.cell(row=row, column=i + 1).value) == str(ids[key])
             for i, key in enumerate(ids_keys)
         ):
             row_to_delete = row

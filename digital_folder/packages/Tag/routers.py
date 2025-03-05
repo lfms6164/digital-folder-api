@@ -1,4 +1,5 @@
 from typing import List
+from uuid import UUID
 
 from fastapi import APIRouter
 
@@ -28,14 +29,14 @@ class TagRouter:
 
     @staticmethod
     @tag_router.patch(path="/patch/{tag_id}")
-    def patch(tag_id: str, tag: TagPatch) -> TagOut:
+    def patch(tag_id: UUID, tag: TagPatch) -> TagOut:
         """Edit tag"""
 
         return TagDTO.edit_by_id(tag_id, tag)
 
     @staticmethod
     @tag_router.delete(path="/delete/{tag_id}")
-    def delete(tag_id: str) -> None:
+    def delete(tag_id: UUID) -> None:
         """Delete tag"""
 
         return TagDTO.delete_by_id(tag_id)

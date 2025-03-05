@@ -1,5 +1,6 @@
 import os
 from typing import Any, List
+from uuid import UUID
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
@@ -27,7 +28,7 @@ class ProjectRouter:
 
     @staticmethod
     @project_router.get(path="/project/{project_id}")
-    def get_by_id(project_id: str) -> ProjectOut:
+    def get_by_id(project_id: UUID) -> ProjectOut:
         """Get project by id"""
 
         return ProjectDTO.get_by_id(project_id)
@@ -41,14 +42,14 @@ class ProjectRouter:
 
     @staticmethod
     @project_router.patch(path="/patch/{project_id}")
-    def patch(project_id: str, project: ProjectPatch) -> ProjectOut:
+    def patch(project_id: UUID, project: ProjectPatch) -> ProjectOut:
         """Edit project"""
 
         return ProjectDTO.edit_by_id(project_id, project)
 
     @staticmethod
     @project_router.delete(path="/delete/{project_id}")
-    def delete(project_id: str) -> None:
+    def delete(project_id: UUID) -> None:
         """Delete project"""
 
         return ProjectDTO.delete_by_id(project_id)

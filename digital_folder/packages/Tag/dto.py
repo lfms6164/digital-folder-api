@@ -18,17 +18,19 @@ class TagDTO:
         tags_df = read_from_db("Tags")
 
         tags = []
-        for _, row in tags_df.iterrows():
-            tag = TagDTO.tag_parser(row)
+        for _, tag in tags_df.iterrows():
+            tag = TagDTO.tag_parser(tag=tag)
             tags.append(tag)
 
         return tags
 
     @staticmethod
-    def get_by_id(tag_id: str) -> TagOut:
+    def get_by_id(tag_id: UUID) -> TagOut:
         tags_df = read_from_db("Tags")
 
-        tag_obj = TagDTO.tag_parser(tags_df[tags_df["id"] == tag_id].iloc[0].to_dict())
+        tag_obj = TagDTO.tag_parser(
+            tag=tags_df[tags_df["id"] == str(tag_id)].iloc[0].to_dict()
+        )
 
         return tag_obj
 
@@ -36,31 +38,31 @@ class TagDTO:
     def create(tag: TagCreate) -> TagOut:
         new_id = uuid4()
 
-        tag_obj = TagDTO.tag_parser(tag, new_id)
+        tag_obj = TagDTO.tag_parser(tag=tag, tag_id=new_id)
         add_to_db(tag_obj)
 
         return tag_obj
 
     @staticmethod
-    def edit_by_id(id_: str, tag_data: TagPatch) -> TagOut:
-        patch_db(id_, tag_data)
+    def edit_by_id(tag_id: UUID, tag_data: TagPatch) -> TagOut:
+        patch_db(tag_id, tag_data)
 
-        return TagDTO.get_by_id(id_)
+        return TagDTO.get_by_id(tag_id)
 
     @staticmethod
-    def delete_by_id(id_: str) -> None:
-        delete_from_db(tag_id=id_)
+    def delete_by_id(tag_id: UUID) -> None:
+        delete_from_db(tag_id=tag_id)
 
-        relations = RelationDTO.get_entity_relations(id_, "tag_id")
+        relations = RelationDTO.get_entity_relations(tag_id, "tag_id")
 
         for relation in relations:
-            RelationDTO.delete_by_id(project_id=relation, tag_id=id_)
+            RelationDTO.delete_by_id(project_id=relation, tag_id=tag_id)
 
     @staticmethod
-    def tag_parser(tag: Any, uuid: Optional[UUID] = None) -> TagOut:
+    def tag_parser(tag: Any, tag_id: Optional[UUID] = None) -> TagOut:
         parsed_tag = (
             {
-                "id": uuid,
+                "id": tag_id,
                 "name": tag.name if tag.name else None,
                 "icon": tag.icon if tag.icon else None,
                 "color": tag.color,
