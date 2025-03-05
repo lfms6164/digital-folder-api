@@ -1,5 +1,5 @@
-from typing import List, Any, Optional
-from uuid import uuid4, UUID
+from typing import Any, List, Optional
+from uuid import UUID, uuid4
 
 from digital_folder.helpers.db_operations import (
     add_to_db,
@@ -20,6 +20,12 @@ from digital_folder.packages.Tag.schemas import TagOut
 class ProjectDTO:
     @staticmethod
     def list() -> List[ProjectOut]:
+        """
+        Retrieve all projects from the database.
+
+        Returns:
+            List[ProjectOut]: A list of all projects.
+        """
         projects_df = read_from_db("Projects")
 
         projects = []
@@ -32,6 +38,15 @@ class ProjectDTO:
 
     @staticmethod
     def get_by_id(project_id: UUID) -> ProjectOut:
+        """
+        Retrieve a project by its ID.
+
+        Args:
+            project_id (UUID): The project ID.
+
+        Returns:
+            ProjectOut: The project data.
+        """
         projects_df = read_from_db("Projects")
 
         project_obj = ProjectDTO.project_parser(
@@ -43,6 +58,17 @@ class ProjectDTO:
 
     @staticmethod
     def create(project: ProjectCreate) -> ProjectOut:
+        """
+        Create a new project.
+        This function takes project data, generates a new UUID, turns this data into a structured ProjectOut object
+        and ads it to the database excluding the tags data which are stored in their own dedicated database table.
+
+        Args:
+            project (ProjectCreate): The project data.
+
+        Returns:
+            ProjectOut: The created project data.
+        """
         new_project_id = uuid4()
 
         project_obj = ProjectDTO.project_parser(
@@ -62,6 +88,16 @@ class ProjectDTO:
 
     @staticmethod
     def edit_by_id(project_id: UUID, project_data: ProjectPatch) -> ProjectOut:
+        """
+        Edit a project by its ID.
+
+        Args:
+            project_id (UUID): The project ID.
+            project_data (ProjectPatch): The project data.
+
+        Returns:
+            ProjectOut: The patched project data.
+        """
         patch_db(project_id, project_data)
 
         if project_data.tags is not None:
@@ -80,6 +116,12 @@ class ProjectDTO:
 
     @staticmethod
     def delete_by_id(project_id: UUID) -> None:
+        """
+        Delete a project by its ID and the corresponding relations.
+
+        Args:
+            project_id (UUID): The project ID.
+        """
         delete_from_db(project_id=project_id)
         relations = RelationDTO.get_entity_relations(project_id, "project_id")
 
@@ -92,6 +134,19 @@ class ProjectDTO:
         project_id: Optional[UUID] = None,
         tags: Optional[List[UUID]] = None,
     ) -> ProjectOut:
+        """
+        This function takes project data, an ID (in case of project: ProjectCreate due to this model not having an ID)
+        and a list of tag IDs (needed for GET requests which only receive an ID and not the full object as input) and
+        turns it into a ProjectOut object.
+
+        Args:
+            project (Any): The project data.
+            project_id (Optional[UUID]): The project ID.
+            tags (Optional[List[UUID]]): A list of tag IDs.
+
+        Returns:
+            ProjectOut: The parsed project data.
+        """
         parsed_project = (
             {
                 "id": project_id,
@@ -112,7 +167,7 @@ class ProjectDTO:
                 "description": (
                     project["description"] if project["description"] else None
                 ),
-                "tags": (ProjectDTO.read_tags_from_db(tags) if tags else None),
+                "tags": (ProjectDTO.get_project_tags(tags) if tags else None),
             }
         )
 
@@ -126,7 +181,17 @@ class ProjectDTO:
         )
 
     @staticmethod
-    def read_tags_from_db(tag_ids: List[UUID]) -> List[TagOut]:
+    def get_project_tags(tag_ids: List[UUID]) -> List[TagOut]:
+        """
+        Retrieve all tags related to a specific project.
+        This function takes a list of tag IDs and returns a list of TagOut objects.
+
+        Args:
+            tag_ids (List[UUID]): A list of tag IDs.
+
+        Returns:
+            List[TagOut]: A list of tag objects.
+        """
         tag_objects = []
         for tag_id in tag_ids:
             if tag_id:

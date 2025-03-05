@@ -1,7 +1,6 @@
-from typing import List, Any, Optional
-from uuid import uuid4, UUID
+from typing import Any, List, Optional
+from uuid import UUID, uuid4
 
-from digital_folder.core.config import project_settings
 from digital_folder.helpers.db_operations import (
     add_to_db,
     delete_from_db,
@@ -15,6 +14,12 @@ from digital_folder.packages.Tag.schemas import TagCreate, TagOut, TagPatch
 class TagDTO:
     @staticmethod
     def list() -> List[TagOut]:
+        """
+        Retrieve all tags from the database.
+
+        Returns:
+            List[TagOut]: A list of all tags.
+        """
         tags_df = read_from_db("Tags")
 
         tags = []
@@ -26,6 +31,15 @@ class TagDTO:
 
     @staticmethod
     def get_by_id(tag_id: UUID) -> TagOut:
+        """
+        Retrieve a tag by its ID.
+
+        Args:
+            tag_id (UUID): The tag ID.
+
+        Returns:
+            TagOut: The tag data.
+        """
         tags_df = read_from_db("Tags")
 
         tag_obj = TagDTO.tag_parser(
@@ -36,6 +50,15 @@ class TagDTO:
 
     @staticmethod
     def create(tag: TagCreate) -> TagOut:
+        """
+        Create a new tag.
+
+        Args:
+            tag (TagCreate): The tag data.
+
+        Returns:
+            TagOut: The created tag data.
+        """
         new_id = uuid4()
 
         tag_obj = TagDTO.tag_parser(tag=tag, tag_id=new_id)
@@ -45,12 +68,28 @@ class TagDTO:
 
     @staticmethod
     def edit_by_id(tag_id: UUID, tag_data: TagPatch) -> TagOut:
+        """
+        Edit a tag by its ID.
+
+        Args:
+            tag_id (UUID): The tag ID.
+            tag_data (TagPatch): The tag data.
+
+        Returns:
+            TagOut: The patched tag data.
+        """
         patch_db(tag_id, tag_data)
 
         return TagDTO.get_by_id(tag_id)
 
     @staticmethod
     def delete_by_id(tag_id: UUID) -> None:
+        """
+        Delete a tag by its ID and the corresponding relations.
+
+        Args:
+            tag_id (UUID): The tag ID.
+        """
         delete_from_db(tag_id=tag_id)
 
         relations = RelationDTO.get_entity_relations(tag_id, "tag_id")
@@ -60,6 +99,17 @@ class TagDTO:
 
     @staticmethod
     def tag_parser(tag: Any, tag_id: Optional[UUID] = None) -> TagOut:
+        """
+        This function takes tag data and an ID (in case of tag: TagCreate due to this model not having an ID)
+        and turns it into a TagOut object.
+
+        Args:
+            tag (Any): The project data.
+            tag_id (Optional[UUID]): The project ID.
+
+        Returns:
+            TagOut: The parsed tag data.
+        """
         parsed_tag = (
             {
                 "id": tag_id,

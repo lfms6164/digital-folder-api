@@ -1,4 +1,4 @@
-from typing import Optional, List, Any
+from typing import Optional, List
 from uuid import UUID
 
 from pydantic import BaseModel
