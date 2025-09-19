@@ -1,124 +1,176 @@
-from typing import Any, Union
+from typing import Any, List, Optional, Type, TypeVar
 from uuid import UUID
 
-import pandas as pd
-from fastapi import HTTPException
-from openpyxl.reader.excel import load_workbook
-from pandas import DataFrame
-from pydantic import BaseModel
+from sqlalchemy import asc, desc, select
 
-from digital_folder.core.config import project_settings
-from digital_folder.packages.Project.schemas import ProjectPatch
-from digital_folder.packages.Tag.schemas import TagPatch
+from digital_folder.db.db import get_db
+from digital_folder.db.models import Base, project_tag_relations
+from digital_folder.helpers.utils import QueryParams
+
+ModelType = TypeVar("ModelType", bound=Base)
 
 
-def read_from_db(sheet_name: str) -> DataFrame:
+class DbService:
+    def __init__(self):
+        self.db = next(get_db())
 
-    return (
-        pd.read_excel(project_settings.EXCEL_DB_PATH, sheet_name=sheet_name)
-        .dropna(how="all")
-        .fillna("")
-    )
+    def get_all(
+        self, model: Type[ModelType], params: Optional[QueryParams] = None
+    ) -> tuple[List[ModelType], int]:
+        """
+        Retrieve all rows from the given SQLAlchemy model.
 
+        Args:
+            model (Type[ModelType]): The SQLAlchemy ORM model class to query.
+            params (Optional[QueryParams]): Query parameters that may contain filters or search.
 
-def add_to_db(item: Any):
-    sheet_map = {
-        "TagOut": "Tags",
-        "dict": "Projects",
-        "RelationBase": "ProjectTagRelation",
-    }
+        Returns:
+            tuple[List[ModelType], int]: A list of db rows from the provided model. The total number of rows.
+        """
 
-    sheet_name = sheet_map[type(item).__name__]
+        query = self.db.query(model)
+        count = query.count()
 
-    wb = load_workbook(project_settings.EXCEL_DB_PATH)
-    sheet = wb[sheet_name]
+        if params:
+            if params.filters:
+                query = query.filter(model.id.in_(params.filters))
 
-    first_empty_row = next(  # Get the first empty row by checking if cells are empty
-        (
-            row_i
-            for row_i, row in enumerate(
-                sheet.iter_rows(min_row=2, values_only=True), start=2
-            )
-            if all(cell is None for cell in row)
-        ),
-        sheet.max_row + 1,
-    )
+            if params.search:
+                query = query.filter(model.name.ilike(f"%{params.search}%"))
 
-    item_dict = item.model_dump() if isinstance(item, BaseModel) else item
+            # TODO: Allow relationship sorting ex: Tag.group
+            if params.sort_by:
+                for sort in params.sort_by:
+                    table_column_to_be_sorted = getattr(model, sort.key, None)
+                    if table_column_to_be_sorted is not None:
+                        if sort.order == "desc":
+                            query = query.order_by(desc(table_column_to_be_sorted))
+                        else:
+                            query = query.order_by(asc(table_column_to_be_sorted))
+            else:
+                query = query.order_by(model.name.asc())
 
-    item_data = [
-        str(value) if isinstance(value, UUID) else value for value in item_dict.values()
-    ]
+            # -1 means all rows should be selected so this is skipped
+            if params.items_per_page != -1:
+                offset = (params.page - 1) * params.items_per_page
+                query = query.offset(offset).limit(params.items_per_page)
 
-    for col_i, value in enumerate(item_data, start=1):
-        sheet.cell(row=first_empty_row, column=col_i, value=value)
+        return query.all(), count
 
-    wb.save(project_settings.EXCEL_DB_PATH)
-    wb.close()
+    def get_by_id(self, model: Type[ModelType], obj_id: UUID) -> Optional[ModelType]:
+        """
+        Retrieve a single row by ID.
 
+        Args:
+            model (Type[ModelType]): The SQLAlchemy ORM model class to query.
+            obj_id (UUID): ID of the object to filter by.
 
-def patch_db(id_: UUID, patch_data: Union[ProjectPatch, TagPatch]):
-    sheet_map = {
-        "TagPatch": "Tags",
-        "ProjectPatch": "Projects",
-    }
+        Returns:
+            Optional[ModelType]: A single db row, if found, from the provided model.
+        """
 
-    sheet_name = sheet_map[type(patch_data).__name__]
+        return self.db.query(model).filter_by(id=obj_id).first()
 
-    wb = load_workbook(project_settings.EXCEL_DB_PATH)
-    sheet = wb[sheet_name]
+    def create(self, model: Type[ModelType], obj_in: dict) -> ModelType:
+        """
+        Create a new row in the given model.
 
-    sheet_header_map = {header.value: i + 1 for i, header in enumerate(sheet[1])}
+        Args:
+            model (Type[ModelType]): The SQLAlchemy ORM model class to query.
+            obj_in (dict): Dict containing the object data to be created.
 
-    row_to_patch = None
-    for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row, values_only=False):
-        if str(row[0].value) == str(id_):
-            row_to_patch = row
-            break
+        Returns:
+            ModelType: The created row of the provided model.
+        """
 
-    if not row_to_patch:
-        raise HTTPException(
-            status_code=400, detail=f"Patch failed - Item {id_} not found."
+        db_obj = model(**obj_in)
+        self.db.add(db_obj)
+        self.db.commit()
+        self.db.refresh(db_obj)
+        return db_obj
+
+    def update(self, model: Type[ModelType], obj_id: UUID, updates: dict) -> ModelType:
+        """
+        Update an existing row with provided fields.
+
+        Args:
+            model (Type[ModelType]): The SQLAlchemy ORM model class to query.
+            obj_id (UUID): ID of the object to update.
+            updates (dict): Dict containing the object data to be updated.
+
+        Returns:
+            ModelType: The updated row of the provided model.
+        """
+
+        obj = self.get_by_id(model, obj_id)
+
+        for field, value in updates.items():
+            setattr(obj, field, value)
+        self.db.commit()
+        self.db.refresh(obj)
+        return obj
+
+    def delete(self, model: Type[ModelType], obj_id: UUID) -> None:
+        """
+        Delete a row from the database.
+
+        Args:
+            model (Type[ModelType]): The SQLAlchemy ORM model class to query.
+            obj_id (UUID): ID of the object to delete.
+        """
+
+        obj = self.get_by_id(model, obj_id)
+
+        self.db.delete(obj)
+        self.db.commit()
+
+    def get_relation_ids(
+        self, ids_list: List[str], search_col: str, return_col: str
+    ) -> Any:
+        """
+        Retrieve IDs from a relation table based on a list of source IDs.
+
+        Args:
+            ids_list (List[str]): List of IDs to filter by on 'search_col'.
+            search_col (str): Table column name in the relation table to filter by.
+            return_col (str): Table column name in the relation table whose values are to be returned.
+
+        Returns:
+        Any: A list of IDs from 'return_col'.
+        """
+
+        query = (
+            select(project_tag_relations.c[return_col])
+            .where(project_tag_relations.c[search_col].in_(ids_list))
+            .distinct()
         )
 
-    for field, value in patch_data.dict(exclude_unset=True).items():
-        if field in sheet_header_map:
-            row_to_patch[sheet_header_map[field] - 1].value = value
+        return self.db.execute(query).scalars().all()
 
-    wb.save(project_settings.EXCEL_DB_PATH)
-    wb.close()
+    def relations_update(
+        self,
+        model: Type[ModelType],
+        model2: Type[ModelType],
+        ids_list: List[UUID],
+        obj_id: UUID,
+        relation_attr: str,
+    ) -> None:
+        """
+        Update a many-to-many relationship between two SQLAlchemy models.
 
+        Args:
+            model (Type[ModelType]): The model class of the parent object.
+            model2 (Type[ModelType]): The model class of the related objects.
+            ids_list (List[UUID]): List of IDs of 'model2' objects to assign to the relation.
+            obj_id (UUID): The ID of the parent object whose relation is to be updated.
+            relation_attr (str): The name of the relation attribute on the parent object.
+        """
 
-def delete_from_db(**ids):
-    sheet_map = {
-        ("tag_id",): "Tags",
-        ("project_id",): "Projects",
-        ("project_id", "tag_id"): "ProjectTagRelation",
-    }
-
-    ids_keys: Any = tuple(sorted(ids.keys()))
-
-    if ids_keys not in sheet_map:
-        raise HTTPException(
-            status_code=400, detail=f"Delete failed - Invalid IDs provided."
-        )
-
-    sheet_name = sheet_map[ids_keys]
-
-    wb = load_workbook(project_settings.EXCEL_DB_PATH)
-    sheet = wb[sheet_name]
-
-    row_to_delete = None
-    for row in range(2, sheet.max_row + 1):
-        if all(
-            str(sheet.cell(row=row, column=i + 1).value) == str(ids[key])
-            for i, key in enumerate(ids_keys)
-        ):
-            row_to_delete = row
-            break
-
-    if row_to_delete:
-        sheet.delete_rows(row_to_delete)
-
-    wb.save(project_settings.EXCEL_DB_PATH)
-    wb.close()
+        # Only used as: tags = db.query(Tag).filter(Tag.id.in_(tag_ids_list)).all()
+        objs = self.db.query(model2).filter(model2.id.in_(ids_list)).all()
+        # Only used as: project = db_get_by_id(db, Project, project_id)
+        obj = self.get_by_id(model, obj_id)
+        # Only used as: project.tags = tags
+        setattr(obj, relation_attr, objs)
+        self.db.commit()
+        self.db.refresh(obj)

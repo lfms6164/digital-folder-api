@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from digital_folder.helpers.schema_utils import create_schema_with_exclusions
+from digital_folder.helpers.utils import create_schema_with_exclusions
 from digital_folder.packages.Tag.schemas import TagOut
 
 
@@ -12,16 +12,17 @@ class ProjectBase(BaseModel):
 
     id: UUID
     name: str
-    image: Optional[str] = None
+    images: Optional[List[str]] = None
     introduction: Optional[str] = None
     description: Optional[str] = None
     tags: Optional[List[TagOut]] = None
+    tag_ids: Optional[List[UUID]] = None
 
 
 ProjectCreate = create_schema_with_exclusions(
     schema_name="ProjectCreate",
     base_schema=ProjectBase,
-    excluding_fields=["id"],
+    excluding_fields=["id", "tags"],
 )
 
 ProjectPatch = create_schema_with_exclusions(

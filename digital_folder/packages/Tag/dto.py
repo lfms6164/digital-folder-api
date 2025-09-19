@@ -1,36 +1,41 @@
-from typing import Any, List, Optional
-from uuid import UUID, uuid4
+from typing import Any, List, Optional, Union
+from uuid import UUID
 
-from digital_folder.helpers.db_operations import (
-    add_to_db,
-    delete_from_db,
-    patch_db,
-    read_from_db,
+from fastapi import HTTPException
+
+from digital_folder.db.models import Tag
+from digital_folder.helpers.db_operations import DbService
+from digital_folder.helpers.utils import QueryParams, PaginatedResponse
+from digital_folder.packages.Group.dto import GroupDTO
+from digital_folder.packages.Tag.schemas import (
+    TagCreate,
+    TagOut,
+    TagPatch,
+    TagWithoutGroupOut,
 )
-from digital_folder.packages.Relation.dto import RelationDTO
-from digital_folder.packages.Tag.schemas import TagCreate, TagOut, TagPatch
 
 
 class TagDTO:
-    @staticmethod
-    def list() -> List[TagOut]:
+    def __init__(self):
+        self.db = DbService()
+
+    def list(self, params: QueryParams) -> PaginatedResponse:
         """
         Retrieve all tags from the database.
 
         Returns:
             List[TagOut]: A list of all tags.
         """
-        tags_df = read_from_db("Tags")
 
-        tags = []
-        for _, tag in tags_df.iterrows():
-            tag = TagDTO.tag_parser(tag=tag)
-            tags.append(tag)
+        tags, count = self.db.get_all(Tag, params)
+        parsed_tags = []
+        for tag in tags:
+            tag = self.tag_parser(tag)
+            parsed_tags.append(tag)
 
-        return tags
+        return PaginatedResponse(items=parsed_tags, count=count)
 
-    @staticmethod
-    def get_by_id(tag_id: UUID) -> TagOut:
+    def get_by_id(self, tag_id: UUID) -> TagOut:
         """
         Retrieve a tag by its ID.
 
@@ -40,16 +45,16 @@ class TagDTO:
         Returns:
             TagOut: The tag data.
         """
-        tags_df = read_from_db("Tags")
 
-        tag_obj = TagDTO.tag_parser(
-            tag=tags_df[tags_df["id"] == str(tag_id)].iloc[0].to_dict()
-        )
+        tag = self.db.get_by_id(Tag, tag_id)
+        if not tag:
+            raise HTTPException(status_code=400, detail=f"Tag {tag_id} not found.")
+
+        tag_obj = self.tag_parser(tag)
 
         return tag_obj
 
-    @staticmethod
-    def create(tag: TagCreate) -> TagOut:
+    def create(self, tag: TagCreate) -> TagOut:
         """
         Create a new tag.
 
@@ -59,15 +64,12 @@ class TagDTO:
         Returns:
             TagOut: The created tag data.
         """
-        new_id = uuid4()
 
-        tag_obj = TagDTO.tag_parser(tag=tag, tag_id=new_id)
-        add_to_db(tag_obj)
+        tag_obj = self.db.create(Tag, tag.dict())
 
-        return tag_obj
+        return self.tag_parser(tag_obj)
 
-    @staticmethod
-    def edit_by_id(tag_id: UUID, tag_data: TagPatch) -> TagOut:
+    def edit_by_id(self, tag_id: UUID, tag_data: TagPatch) -> TagOut:
         """
         Edit a tag by its ID.
 
@@ -78,55 +80,63 @@ class TagDTO:
         Returns:
             TagOut: The patched tag data.
         """
-        patch_db(tag_id, tag_data)
 
-        return TagDTO.get_by_id(tag_id)
+        self.db.update(Tag, tag_id, tag_data.dict(exclude_unset=True))
 
-    @staticmethod
-    def delete_by_id(tag_id: UUID) -> None:
+        return self.get_by_id(tag_id)
+
+    def delete_by_id(self, tag_id: UUID) -> None:
         """
-        Delete a tag by its ID and the corresponding relations.
+        Delete a tag by its ID. Relations are deleted automatically.
 
         Args:
             tag_id (UUID): The tag ID.
         """
-        delete_from_db(tag_id=tag_id)
 
-        relations = RelationDTO.get_entity_relations(tag_id, "tag_id")
-
-        for relation in relations:
-            RelationDTO.delete_by_id(project_id=relation, tag_id=tag_id)
+        self.db.delete(Tag, tag_id)
 
     @staticmethod
-    def tag_parser(tag: Any, tag_id: Optional[UUID] = None) -> TagOut:
+    def tag_parser(
+        tag: Any, include_group: Optional[bool] = True
+    ) -> Union[TagOut, TagWithoutGroupOut]:
         """
-        This function takes tag data and an ID (in case of tag: TagCreate due to this model not having an ID)
-        and turns it into a TagOut object.
+        This function takes tag data and turns it into a TagOut object.
 
         Args:
-            tag (Any): The project data.
-            tag_id (Optional[UUID]): The project ID.
+            tag (Any): The tag data.
+            include_group (Optional[bool]): Flag to return tag with or without group.
 
         Returns:
             TagOut: The parsed tag data.
         """
-        parsed_tag = (
-            {
-                "id": tag_id,
-                "name": tag.name if tag.name else None,
-                "icon": tag.icon if tag.icon else None,
-                "color": tag.color,
-            }
-            if isinstance(tag, TagCreate)
-            else {
-                "id": UUID(tag["id"]),
-                "name": tag["name"] if tag["name"] else None,
-                "icon": tag["icon"] if tag["icon"] else None,
-                "color": tag["color"],
-            }
-        )
 
-        return TagOut(
+        if include_group:
+            parsed_tag = {
+                "id": tag.id,
+                "name": tag.name or None,
+                "icon": tag.icon or None,
+                "color": tag.color,
+                "group": GroupDTO().group_parser(tag.group, False),
+                "group_id": tag.group_id,
+            }
+
+            return TagOut(
+                id=parsed_tag["id"],
+                name=parsed_tag["name"],
+                icon=parsed_tag["icon"],
+                color=parsed_tag["color"],
+                group=parsed_tag["group"],
+                group_id=parsed_tag["group_id"],
+            )
+
+        parsed_tag = {
+            "id": tag.id,
+            "name": tag.name or None,
+            "icon": tag.icon or None,
+            "color": tag.color,
+        }
+
+        return TagWithoutGroupOut(
             id=parsed_tag["id"],
             name=parsed_tag["name"],
             icon=parsed_tag["icon"],

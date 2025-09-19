@@ -1,2 +1,5 @@
-digital_folder/db/
+__pycache__/
 .idea/
+.run/
+.venv/
+.env

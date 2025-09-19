@@ -1,10 +1,9 @@
 """Core settings"""
 
-from pydantic import MySQLDsn, SecretStr
-from pydantic.v1 import BaseSettings
+import os
 
-from digital_folder import __version__
-from digital_folder.helpers.secrets import get_scrt_key
+from pydantic import SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ProjectSettingsBase(BaseSettings):
@@ -14,20 +13,30 @@ class ProjectSettingsBase(BaseSettings):
     backend_cors_origins: str = "http://localhost:5173"
 
 
+DOTENV = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
+
+
 class ProjectSettings(ProjectSettingsBase):
     """Project settings"""
 
-    project_name: str = "DigitalFolder"
-    project_version: str = __version__
+    project_name: str
+    project_version: str
+    debug: bool
+    env: str
 
-    mysql_uri: MySQLDsn = MySQLDsn("mysql+pymysql://root:pswrd@localhost")
-    EXCEL_DB_PATH = r"C:\Users\Player One\repos\DigitalFolder\digitalfolder_db.xlsx"
-    static_folder_path = r"C:\Users\Player One\repos\DigitalFolder\images"
+    # mysql_uri: MySQLDsn = MySQLDsn("mysql+pymysql://root:pswrd@localhost")
+    dev_database_url: str
+    prod_database_url: str
 
-    jwt_secret_key: SecretStr = get_scrt_key(EXCEL_DB_PATH)
-    jwt_algorithm: str = "HS256"
+    jwt_secret_key: SecretStr
+    jwt_algorithm: str
+    access_token_expires_in: int
 
-    access_token_expires_in: int = 30
+    project_url: str
+    public_key: str
+    service_role_key: str
+
+    model_config = SettingsConfigDict(env_file=DOTENV, env_file_encoding="utf-8")
 
 
 project_settings = ProjectSettings()

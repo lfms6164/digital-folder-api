@@ -1,10 +1,12 @@
-import os
-from typing import Any, List
+from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Query
 
-from digital_folder.core.config import project_settings
+from digital_folder.helpers.utils import (
+    query_params_parser,
+    PaginatedResponse,
+)
 from digital_folder.packages.Project.dto import ProjectDTO
 from digital_folder.packages.Project.schemas import (
     ProjectOut,
@@ -16,68 +18,52 @@ project_router = APIRouter()
 
 
 class ProjectRouter:
+    def __init__(self, router: APIRouter):
+        self.model_dto = ProjectDTO()
+        self.router = router
+        self.router.add_api_route("/list", self.list, methods=["GET"])
+        self.router.add_api_route(
+            "/project/{project_id}", self.get_by_id, methods=["GET"]
+        )
+        self.router.add_api_route("/create", self.create, methods=["POST"])
+        self.router.add_api_route("/patch/{project_id}", self.patch, methods=["PATCH"])
+        self.router.add_api_route(
+            "/delete/{project_id}", self.delete, methods=["DELETE"]
+        )
 
-    model_dto = ProjectDTO
-
-    @staticmethod
-    @project_router.get(path="/list")
-    def list() -> List[ProjectOut]:
+    async def list(
+        self,
+        filters: Optional[str] = Query(None, description="Comma-separated tag IDs"),
+        search: Optional[str] = Query(None, description="Search string"),
+    ) -> PaginatedResponse:
         """List projects"""
 
-        return ProjectDTO.list()
+        params = query_params_parser(
+            filters=filters,
+            search=search,
+        )
 
-    @staticmethod
-    @project_router.get(path="/project/{project_id}")
-    def get_by_id(project_id: UUID) -> ProjectOut:
+        return self.model_dto.list(params)
+
+    async def get_by_id(self, project_id: UUID) -> ProjectOut:
         """Get project by id"""
 
-        return ProjectDTO.get_by_id(project_id)
+        return self.model_dto.get_by_id(project_id)
 
-    @staticmethod
-    @project_router.post(path="/create")
-    def create(project: ProjectCreate) -> ProjectOut:
+    async def create(self, project: ProjectCreate) -> ProjectOut:
         """Create project"""
 
-        return ProjectDTO.create(project)
+        return self.model_dto.create(project)
 
-    @staticmethod
-    @project_router.patch(path="/patch/{project_id}")
-    def patch(project_id: UUID, project: ProjectPatch) -> ProjectOut:
+    async def patch(self, project_id: UUID, project: ProjectPatch) -> ProjectOut:
         """Edit project"""
 
-        return ProjectDTO.edit_by_id(project_id, project)
+        return self.model_dto.edit_by_id(project_id, project)
 
-    @staticmethod
-    @project_router.delete(path="/delete/{project_id}")
-    def delete(project_id: UUID) -> None:
+    async def delete(self, project_id: UUID) -> None:
         """Delete project"""
 
-        return ProjectDTO.delete_by_id(project_id)
+        return self.model_dto.delete_by_id(project_id)
 
-    @staticmethod
-    @project_router.post(path="/upload_image")
-    async def upload_image(file: UploadFile = File(...)) -> Any:
-        """Handles image upload and returns the saved filename"""
 
-        upload_dir = project_settings.static_folder_path
-        if not os.path.exists(upload_dir):
-            raise HTTPException(
-                status_code=400, detail=f"Directory does not exist: {upload_dir}"
-            )
-
-        file_extension = file.filename.split(".")[-1].lower()
-        if file_extension not in ["png", "jpg", "jpeg", "gif"]:
-            raise HTTPException(
-                status_code=400, detail="Upload image failed - Invalid file type"
-            )
-
-        existing_files = set(os.listdir(upload_dir))
-
-        if file.filename not in existing_files:
-            file_path = os.path.join(upload_dir, file.filename)
-
-            # Save file
-            with open(file_path, "wb") as buffer:
-                buffer.write(await file.read())
-
-        return {"filename": file.filename}
+ProjectRouter(project_router)

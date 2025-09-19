@@ -1,8 +1,8 @@
 from pydantic import BaseModel, SecretStr
 
 
-class AuthArgs(BaseModel):
-    """Auth Args schema"""
+class AuthBase(BaseModel):
+    """Auth Base schema"""
 
     username: str
     password: SecretStr

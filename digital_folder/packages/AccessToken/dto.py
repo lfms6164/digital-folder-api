@@ -25,6 +25,7 @@ class AccessTokenDTO:
 
         return str(encoded_jwt)
 
+    # TODO: This might be useless
     @staticmethod
     def get_token_data(token: str = Depends(oauth2_scheme)):
         try:
