@@ -1,24 +1,37 @@
-from typing import Any, List
+from typing import List
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
-from digital_folder.supabase.client import get_supabase_client
+from digital_folder.db.dependencies import get_db_with_user
+from digital_folder.db.service import DbService
+from digital_folder.supabase.client import (
+    get_supabase_client,
+    SupabaseStorageConfig,
+    validate_bucket,
+)
 
 supabase_router = APIRouter()
 
 
-@supabase_router.post(path="/upload_files/{bucket}")
-async def upload_files(bucket: str, files: List[UploadFile] = File(...)) -> Any:
+@supabase_router.post(path="/upload_files/{bucket}/{folder}")
+async def upload_files(
+    bucket: str,
+    folder: str,
+    files: List[UploadFile] = File(...),
+    _: DbService = Depends(get_db_with_user),
+) -> dict[str, List[str]]:
     """Upload files to Supabase and return the file names"""
 
-    file_names = await SupabaseDTO(bucket).upload_files(files)
+    config = SupabaseStorageConfig(bucket=bucket, folder=folder)
+    file_names = await SupabaseDTO(config).upload_files(files)
 
     return {"file_names": file_names}
 
 
 class SupabaseDTO:
-    def __init__(self, bucket: str):
-        self.bucket = bucket
+    def __init__(self, config: SupabaseStorageConfig):
+        self.bucket = validate_bucket(config.bucket)
+        self.folder = config.folder
         self.supabase_client = get_supabase_client()
 
     async def upload_files(self, files: List[UploadFile] = File(...)) -> List[str]:
@@ -43,7 +56,7 @@ class SupabaseDTO:
             file_bytes = await file.read()
 
             self.supabase_client.storage.from_(self.bucket).upload(
-                path=f"temp/{file.filename}",
+                path=f"{self.folder}/temp/{file.filename}",
                 file=file_bytes,
                 file_options={
                     "cache-control": "3600",
@@ -56,19 +69,19 @@ class SupabaseDTO:
 
         return file_names
 
-    def list_files_from_folder(self, folder_name: str) -> List[str]:
+    def get_files_from_folder(self, subfolder_name: str) -> List[str]:
         """
-        List files from a Supabase storage folder.
+        Get all files from a specific Supabase storage folder.
 
         Args:
-            folder_name (str): The folder name.
+            subfolder_name (str): The subfolder name.
 
         Returns:
             List[str]: The list of file names.
         """
 
         files = self.supabase_client.storage.from_(self.bucket).list(
-            folder_name,
+            f"{self.folder}/{subfolder_name}",
             {
                 "limit": 100,
                 "offset": 0,
@@ -78,39 +91,41 @@ class SupabaseDTO:
 
         return [file["name"] for file in files] if files else []
 
-    def move_files(self, files: List[str], folder_name: str) -> None:
+    def move_files(self, files: List[str], subfolder_name: str) -> None:
         """
         Move files between Supabase storage folders.
 
         Args:
             files (List[str]): The file names to be moved.
-            folder_name (str): The destination folder name.
+            subfolder_name (str): The destination subfolder name.
         """
 
         for file in files:
             self.supabase_client.storage.from_(self.bucket).move(
-                f"temp/{file}", f"{folder_name}/{file}"
+                f"{self.folder}/temp/{file}", f"{self.folder}/{subfolder_name}/{file}"
             )
 
-    def delete_files(self, files: List[str]) -> None:
+    def delete_files(self, files: List[str], subfolder_name: str) -> None:
         """
         Delete files from a Supabase storage folder.
 
         Args:
             files (List[str]): The files to be deleted.
+            subfolder_name (str): The subfolder name.
         """
+
+        files = [f"{self.folder}/{subfolder_name}/{file}" for file in files]
 
         self.supabase_client.storage.from_(self.bucket).remove(files)
 
-    def delete_folder(self, folder_name: str) -> None:
+    def delete_folder(self, subfolder_name: str) -> None:
         """
         Delete a Supabase storage folder.
 
         Args:
-            folder_name (str): The folder name.
+            subfolder_name (str): The subfolder name.
         """
 
-        files = self.list_files_from_folder(folder_name)
-        files = [f"{folder_name}/{file}" for file in files]
+        files = self.get_files_from_folder(subfolder_name)
 
-        self.delete_files(files)
+        self.delete_files(files, subfolder_name)

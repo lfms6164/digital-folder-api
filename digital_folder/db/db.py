@@ -28,8 +28,7 @@ Base = declarative_base()
 
 
 def get_db():
-    db = SessionLocal()
-    try:
+    from digital_folder.db.service import DbService
+
+    with DbService() as db:
         yield db
-    finally:
-        db.close()

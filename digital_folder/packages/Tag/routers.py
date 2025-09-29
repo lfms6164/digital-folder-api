@@ -1,21 +1,20 @@
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
-from digital_folder.helpers.utils import (
-    query_params_parser,
-    PaginatedResponse,
-)
+from digital_folder.core.pagination import PaginatedResponse, query_params_parser
+from digital_folder.db.dependencies import get_db_with_user
+from digital_folder.db.service import DbService
 from digital_folder.packages.Tag.dto import TagDTO
-from digital_folder.packages.Tag.schemas import TagOut, TagCreate, TagPatch
+from digital_folder.packages.Tag.schemas import TagCreate, TagPatch, TagOut
 
 tag_router = APIRouter()
 
 
 class TagRouter:
     def __init__(self, router: APIRouter):
-        self.model_dto = TagDTO()
+        self.model_dto = TagDTO
         self.router = router
         self.router.add_api_route("/list", self.list, methods=["GET"])
         self.router.add_api_route("/create", self.create, methods=["POST"])
@@ -24,7 +23,7 @@ class TagRouter:
 
     async def list(
         self,
-        filters: Optional[str] = Query(None, description="Comma-separated tag IDs"),
+        filters: Optional[str] = Query(None, description="Comma-separated group IDs"),
         items_per_page: int = Query(
             10,
             ge=-1,
@@ -39,10 +38,12 @@ class TagRouter:
             description="""JSON string like [{"key":"name","order":"desc"}]""",
             alias="sortBy",
         ),
+        db: DbService = Depends(get_db_with_user),
     ) -> PaginatedResponse:
         """List tags"""
 
         params = query_params_parser(
+            db=db,
             filters=filters,
             items_per_page=items_per_page,
             page=page,
@@ -50,22 +51,33 @@ class TagRouter:
             sort_by=sort_by,
         )
 
-        return self.model_dto.list(params)
+        return self.model_dto(db).list(params)
 
-    async def create(self, tag: TagCreate) -> TagOut:
+    async def create(
+        self,
+        tag: TagCreate,
+        db: DbService = Depends(get_db_with_user),
+    ) -> TagOut:
         """Create tag"""
 
-        return self.model_dto.create(tag)
+        return self.model_dto(db).create(tag)
 
-    async def patch(self, tag_id: UUID, tag: TagPatch) -> TagOut:
+    async def patch(
+        self,
+        tag_id: UUID,
+        tag: TagPatch,
+        db: DbService = Depends(get_db_with_user),
+    ) -> TagOut:
         """Edit tag"""
 
-        return self.model_dto.edit_by_id(tag_id, tag)
+        return self.model_dto(db).edit_by_id(tag_id, tag)
 
-    async def delete(self, tag_id: UUID) -> None:
+    async def delete(
+        self, tag_id: UUID, db: DbService = Depends(get_db_with_user)
+    ) -> None:
         """Delete tag"""
 
-        return self.model_dto.delete_by_id(tag_id)
+        return self.model_dto(db).delete_by_id(tag_id)
 
 
 TagRouter(tag_router)

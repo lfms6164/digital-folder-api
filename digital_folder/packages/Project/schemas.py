@@ -1,7 +1,7 @@
 from typing import Optional, List
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 
 from digital_folder.helpers.utils import create_schema_with_exclusions
 from digital_folder.packages.Tag.schemas import TagOut
@@ -12,17 +12,19 @@ class ProjectBase(BaseModel):
 
     id: UUID
     name: str
-    images: Optional[List[str]] = None
+    repo_url: Optional[HttpUrl] = None
     introduction: Optional[str] = None
     description: Optional[str] = None
     tags: Optional[List[TagOut]] = None
     tag_ids: Optional[List[UUID]] = None
+    images: Optional[List[str]] = None
+    created_by: UUID
 
 
 ProjectCreate = create_schema_with_exclusions(
     schema_name="ProjectCreate",
     base_schema=ProjectBase,
-    excluding_fields=["id", "tags"],
+    excluding_fields=["id", "tags", "created_by"],
 )
 
 ProjectPatch = create_schema_with_exclusions(

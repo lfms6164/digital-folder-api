@@ -3,24 +3,28 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
+from digital_folder.core.auth import validate_ownership, validate_unique
+from digital_folder.core.pagination import PaginatedResponse, QueryParams
 from digital_folder.db.models import Ticket
-from digital_folder.helpers.db_operations import DbService
-from digital_folder.helpers.utils import PaginatedResponse
+from digital_folder.db.service import DbService
 from digital_folder.packages.Ticket.schemas import (
     TicketCreate,
-    TicketOut,
     TicketPatch,
+    TicketOut,
     TicketState,
 )
+from digital_folder.supabase.client import SupabaseStorageConfig
 from digital_folder.supabase.storage import SupabaseDTO
 
 
 class TicketDTO:
-    def __init__(self):
-        self.db = DbService()
-        self.supabase_storage_bucket = "tickets"
+    def __init__(self, db: DbService):
+        self.db = db
+        self.supabase_storage_config = SupabaseStorageConfig(
+            bucket=self.db.user.role_config.storage_bucket, folder="tickets"
+        )
 
-    def list(self) -> PaginatedResponse:
+    def list(self, params: QueryParams) -> PaginatedResponse:
         """
         Retrieve all tickets from the database.
 
@@ -28,7 +32,7 @@ class TicketDTO:
             List[TicketOut]: A list of all tickets.
         """
 
-        tickets, count = self.db.get_all(Ticket)
+        tickets, count = self.db.get_all(Ticket, params)
         parsed_tickets = []
         for ticket in tickets:
             ticket = self.ticket_parser(ticket)
@@ -53,9 +57,7 @@ class TicketDTO:
                 status_code=400, detail=f"Ticket {ticket_id} not found."
             )
 
-        ticket_obj = self.ticket_parser(ticket)
-
-        return ticket_obj
+        return self.ticket_parser(ticket)
 
     def create(self, ticket_data: TicketCreate) -> TicketOut:
         """
@@ -68,10 +70,14 @@ class TicketDTO:
             TicketOut: The created ticket object.
         """
 
-        ticket = self.db.create(Ticket, ticket_data.dict())
+        validate_unique(self.db, Ticket, ticket_data.name)
+
+        ticket_dict = ticket_data.dict()
+        ticket_dict["created_by"] = self.db.user.id
+        ticket = self.db.create(Ticket, ticket_dict)
 
         if ticket.image:
-            SupabaseDTO(self.supabase_storage_bucket).move_files(
+            SupabaseDTO(self.supabase_storage_config).move_files(
                 [ticket.image], str(ticket.id)
             )
 
@@ -89,6 +95,8 @@ class TicketDTO:
             TicketOut: The patched ticket object.
         """
 
+        validate_ownership(self, [ticket_id])
+
         self.db.update(Ticket, ticket_id, ticket_data.dict(exclude_unset=True))
 
         return self.get_by_id(ticket_id)
@@ -101,9 +109,11 @@ class TicketDTO:
             ticket_id (UUID): The ticket ID.
         """
 
+        validate_ownership(self, [ticket_id])
+
         ticket = self.get_by_id(ticket_id)
         if ticket.image:
-            SupabaseDTO(self.supabase_storage_bucket).delete_folder(str(ticket_id))
+            SupabaseDTO(self.supabase_storage_config).delete_folder(str(ticket_id))
 
         self.db.delete(Ticket, ticket_id)
 
@@ -125,6 +135,7 @@ class TicketDTO:
             "description": ticket.description,
             "image": ticket.image or None,
             "state": TicketState(ticket.state.value),
+            "created_by": ticket.created_by,
             "created_at": ticket.created_at,
             "updated_at": ticket.updated_at or None,
         }
@@ -135,6 +146,7 @@ class TicketDTO:
             description=parsed_ticket["description"],
             image=parsed_ticket["image"],
             state=parsed_ticket["state"],
+            created_by=parsed_ticket["created_by"],
             created_at=parsed_ticket["created_at"],
             updated_at=parsed_ticket["updated_at"],
         )

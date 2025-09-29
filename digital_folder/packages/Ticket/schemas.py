@@ -21,6 +21,7 @@ class TicketBase(BaseModel):
     description: str
     image: Optional[str] = None
     state: TicketState
+    created_by: UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -28,13 +29,21 @@ class TicketBase(BaseModel):
 TicketCreate = create_schema_with_exclusions(
     schema_name="TicketCreate",
     base_schema=TicketBase,
-    excluding_fields=["id", "state", "created_at", "updated_at"],
+    excluding_fields=["id", "state", "created_by", "created_at", "updated_at"],
 )
 
 TicketPatch = create_schema_with_exclusions(
     schema_name="TicketPatch",
     base_schema=TicketBase,
-    excluding_fields=["id", "name", "description", "image", "created_at", "updated_at"],
+    excluding_fields=[
+        "id",
+        "name",
+        "description",
+        "image",
+        "created_by",
+        "created_at",
+        "updated_at",
+    ],
     optional=True,
 )
 

@@ -3,21 +3,22 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
+from digital_folder.core.auth import validate_ownership, validate_unique
+from digital_folder.core.pagination import PaginatedResponse, QueryParams
 from digital_folder.db.models import Tag
-from digital_folder.helpers.db_operations import DbService
-from digital_folder.helpers.utils import QueryParams, PaginatedResponse
+from digital_folder.db.service import DbService
 from digital_folder.packages.Group.dto import GroupDTO
 from digital_folder.packages.Tag.schemas import (
     TagCreate,
-    TagOut,
     TagPatch,
+    TagOut,
     TagWithoutGroupOut,
 )
 
 
 class TagDTO:
-    def __init__(self):
-        self.db = DbService()
+    def __init__(self, db: DbService):
+        self.db = db
 
     def list(self, params: QueryParams) -> PaginatedResponse:
         """
@@ -50,22 +51,25 @@ class TagDTO:
         if not tag:
             raise HTTPException(status_code=400, detail=f"Tag {tag_id} not found.")
 
-        tag_obj = self.tag_parser(tag)
+        return self.tag_parser(tag)
 
-        return tag_obj
-
-    def create(self, tag: TagCreate) -> TagOut:
+    def create(self, tag_data: TagCreate) -> TagOut:
         """
         Create a new tag.
 
         Args:
-            tag (TagCreate): The tag data.
+            tag_data (TagCreate): The tag data.
 
         Returns:
             TagOut: The created tag data.
         """
 
-        tag_obj = self.db.create(Tag, tag.dict())
+        validate_ownership(GroupDTO(self.db), [tag_data.group_id], True)
+        validate_unique(self.db, Tag, tag_data.name)
+
+        tag_dict = tag_data.dict()
+        tag_dict["created_by"] = self.db.user.id
+        tag_obj = self.db.create(Tag, tag_dict)
 
         return self.tag_parser(tag_obj)
 
@@ -81,6 +85,12 @@ class TagDTO:
             TagOut: The patched tag data.
         """
 
+        validate_ownership(self, [tag_id])
+        if tag_data.group_id:
+            validate_ownership(GroupDTO(self.db), [tag_data.group_id], True)
+        if tag_data.name:
+            validate_unique(self.db, Tag, tag_data.name)
+
         self.db.update(Tag, tag_id, tag_data.dict(exclude_unset=True))
 
         return self.get_by_id(tag_id)
@@ -93,11 +103,12 @@ class TagDTO:
             tag_id (UUID): The tag ID.
         """
 
+        validate_ownership(self, [tag_id])
+
         self.db.delete(Tag, tag_id)
 
-    @staticmethod
     def tag_parser(
-        tag: Any, include_group: Optional[bool] = True
+        self, tag: Any, include_group: Optional[bool] = True
     ) -> Union[TagOut, TagWithoutGroupOut]:
         """
         This function takes tag data and turns it into a TagOut object.
@@ -116,8 +127,9 @@ class TagDTO:
                 "name": tag.name or None,
                 "icon": tag.icon or None,
                 "color": tag.color,
-                "group": GroupDTO().group_parser(tag.group, False),
+                "group": GroupDTO(self.db).group_parser(tag.group, False),
                 "group_id": tag.group_id,
+                "created_by": tag.created_by,
             }
 
             return TagOut(
@@ -127,6 +139,7 @@ class TagDTO:
                 color=parsed_tag["color"],
                 group=parsed_tag["group"],
                 group_id=parsed_tag["group_id"],
+                created_by=parsed_tag["created_by"],
             )
 
         parsed_tag = {
@@ -134,6 +147,7 @@ class TagDTO:
             "name": tag.name or None,
             "icon": tag.icon or None,
             "color": tag.color,
+            "created_by": tag.created_by,
         }
 
         return TagWithoutGroupOut(
@@ -141,4 +155,5 @@ class TagDTO:
             name=parsed_tag["name"],
             icon=parsed_tag["icon"],
             color=parsed_tag["color"],
+            created_by=parsed_tag["created_by"],
         )

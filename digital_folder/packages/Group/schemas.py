@@ -13,12 +13,13 @@ class GroupBase(BaseModel):
     name: Optional[str] = None
     has_tags: bool = False
     tags: Optional[List["TagWithoutGroupOut"]] = None
+    created_by: UUID
 
 
 GroupCreate = create_schema_with_exclusions(
     schema_name="GroupCreate",
     base_schema=GroupBase,
-    excluding_fields=["id", "has_tags", "tags"],
+    excluding_fields=["id", "has_tags", "tags", "created_by"],
 )
 
 GroupPatch = create_schema_with_exclusions(

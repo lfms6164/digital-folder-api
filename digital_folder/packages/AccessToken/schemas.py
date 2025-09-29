@@ -4,7 +4,7 @@ from pydantic import BaseModel
 class TokenData(BaseModel):
     """Token Data schema"""
 
-    username: str
+    id: str
 
 
 class Token(BaseModel):

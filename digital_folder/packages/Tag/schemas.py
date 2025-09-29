@@ -16,12 +16,13 @@ class TagBase(BaseModel):
     color: str
     group: GroupWithoutTagsOut
     group_id: UUID
+    created_by: UUID
 
 
 TagCreate = create_schema_with_exclusions(
     schema_name="TagCreate",
     base_schema=TagBase,
-    excluding_fields=["id", "group"],
+    excluding_fields=["id", "group", "created_by"],
 )
 
 TagPatch = create_schema_with_exclusions(

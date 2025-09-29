@@ -3,20 +3,21 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
+from digital_folder.core.auth import validate_ownership, validate_unique
+from digital_folder.core.pagination import PaginatedResponse, QueryParams
 from digital_folder.db.models import Group
-from digital_folder.helpers.db_operations import DbService
-from digital_folder.helpers.utils import QueryParams, PaginatedResponse
+from digital_folder.db.service import DbService
 from digital_folder.packages.Group.schemas import (
     GroupCreate,
-    GroupOut,
     GroupPatch,
+    GroupOut,
     GroupWithoutTagsOut,
 )
 
 
 class GroupDTO:
-    def __init__(self):
-        self.db = DbService()
+    def __init__(self, db: DbService):
+        self.db = db
 
     def list(self, params: QueryParams) -> PaginatedResponse:
         """
@@ -49,22 +50,24 @@ class GroupDTO:
         if not group:
             raise HTTPException(status_code=400, detail=f"Group {group_id} not found.")
 
-        group_obj = self.group_parser(group)
+        return self.group_parser(group)
 
-        return group_obj
-
-    def create(self, group: GroupCreate) -> GroupOut:
+    def create(self, group_data: GroupCreate) -> GroupOut:
         """
         Create a new group.
 
         Args:
-            group (GroupCreate): The group data.
+            group_data (GroupCreate): The group data.
 
         Returns:
             GroupOut: The created group object.
         """
 
-        group_obj = self.db.create(Group, group.dict())
+        validate_unique(self.db, Group, group_data.name)
+
+        group_dict = group_data.dict()
+        group_dict["created_by"] = self.db.user.id
+        group_obj = self.db.create(Group, group_dict)
 
         return self.group_parser(group_obj)
 
@@ -80,6 +83,10 @@ class GroupDTO:
             GroupOut: The patched group object.
         """
 
+        validate_ownership(self, [group_id])
+        if group_data.name:
+            validate_unique(self.db, Group, group_data.name)
+
         self.db.update(Group, group_id, group_data.dict(exclude_unset=True))
 
         return self.get_by_id(group_id)
@@ -92,6 +99,8 @@ class GroupDTO:
             group_id (UUID): The group ID.
         """
 
+        validate_ownership(self, [group_id])
+
         group = self.get_by_id(group_id)
         if group.has_tags:
             raise HTTPException(
@@ -101,9 +110,8 @@ class GroupDTO:
 
         self.db.delete(Group, group.id)
 
-    @staticmethod
     def group_parser(
-        group: Any, include_tags: Optional[bool] = False
+        self, group: Any, include_tags: Optional[bool] = False
     ) -> Union[GroupOut, GroupWithoutTagsOut]:
         """
         This function takes group data and turns it into a GroupOut object.
@@ -119,7 +127,7 @@ class GroupDTO:
         if include_tags:
             from digital_folder.packages.Tag.dto import TagDTO
 
-            tag_dto = TagDTO()
+            tag_dto = TagDTO(self.db)
 
             parsed_group = {
                 "id": group.id,
@@ -130,6 +138,7 @@ class GroupDTO:
                     if group.tags
                     else []
                 ),
+                "created_by": group.created_by,
             }
 
             return GroupOut(
@@ -137,16 +146,19 @@ class GroupDTO:
                 name=parsed_group["name"],
                 has_tags=parsed_group["has_tags"],
                 tags=parsed_group["tags"],
+                created_by=parsed_group["created_by"],
             )
 
         parsed_group = {
             "id": group.id,
             "name": group.name or None,
             "has_tags": True if group.tags else False,
+            "created_by": group.created_by,
         }
 
         return GroupWithoutTagsOut(
             id=parsed_group["id"],
             name=parsed_group["name"],
             has_tags=parsed_group["has_tags"],
+            created_by=parsed_group["created_by"],
         )
