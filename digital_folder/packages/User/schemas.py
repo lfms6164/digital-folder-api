@@ -23,7 +23,8 @@ class UserRole(str, Enum):
 
 class UserRoleConfig(BaseModel):
     filter_id: Optional[UUID] = None
-    storage_bucket: Optional[str] = None
+    storage_bucket: str
+    storage_folder: str
 
 
 class UserBase(BaseModel):
@@ -32,6 +33,7 @@ class UserBase(BaseModel):
     id: UUID
     username: str
     password: SecretStr
+    env: str
     role: UserRole
     role_config: UserRoleConfig
 
@@ -45,5 +47,5 @@ UserOut = create_schema_with_exclusions(
 UserDb = create_schema_with_exclusions(
     schema_name="UserDb",
     base_schema=UserBase,
-    excluding_fields=["password"],
+    excluding_fields=["password", "env"],
 )

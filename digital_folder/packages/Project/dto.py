@@ -21,7 +21,9 @@ class ProjectDTO:
     def __init__(self, db: DbService):
         self.db = db
         self.supabase_storage_config = SupabaseStorageConfig(
-            bucket=self.db.user.role_config.storage_bucket, folder="projects"
+            bucket=self.db.user.role_config.storage_bucket,
+            folder=self.db.user.role_config.storage_folder,
+            subfolder="projects",
         )
 
     def list(self, params: QueryParams) -> PaginatedResponse:

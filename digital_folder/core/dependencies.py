@@ -39,13 +39,19 @@ def validate_user(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="JWTError")
 
     user = UserDTO(db).get_by_id(user_id)
+    env = project_settings.env.lower()
 
     role_config = {
-        UserRole.ADMIN: UserRoleConfig(filter_id=None, storage_bucket="admin"),
-        UserRole.USER: UserRoleConfig(filter_id=user.id, storage_bucket="user"),
+        UserRole.ADMIN: UserRoleConfig(
+            filter_id=None, storage_bucket=env, storage_folder="admin"
+        ),
+        UserRole.USER: UserRoleConfig(
+            filter_id=user.id, storage_bucket=env, storage_folder="user"
+        ),
         UserRole.VIEWER: UserRoleConfig(
             filter_id=UserDTO(db).get_by_field(UserRole.ADMIN, "role").id,
-            storage_bucket="admin",
+            storage_bucket=env,
+            storage_folder="admin",
         ),
     }
 
@@ -61,6 +67,6 @@ def validate_role(user: UserOut = Depends(validate_user)) -> UserOut:
     if user.role not in [UserRole.ADMIN, UserRole.USER]:
         raise HTTPException(
             status_code=403,
-            detail=f"User {user.id} does not have access to perform this action.",
+            detail=f"User {user.id} does not have permission to perform this action.",
         )
     return user

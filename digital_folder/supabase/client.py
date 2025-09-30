@@ -8,6 +8,7 @@ from digital_folder.core.config import project_settings
 class SupabaseStorageConfig(BaseModel):
     bucket: str
     folder: str
+    subfolder: str
 
 
 def get_supabase_client() -> Client:
@@ -17,7 +18,7 @@ def get_supabase_client() -> Client:
 
 
 def validate_bucket(bucket: str) -> str:
-    if not bucket or bucket not in ["admin", "user"]:
+    if not bucket or bucket not in ["dev", "prod"]:
         raise HTTPException(
             status_code=404, detail="Supabase storage bucket is invalid."
         )

@@ -3,6 +3,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
+from digital_folder.core.config import project_settings
 from digital_folder.db.models import User
 from digital_folder.db.service import DbService
 from digital_folder.helpers.secrets import verify_password
@@ -93,11 +94,13 @@ class UserDTO:
         parsed_user = {
             "id": user.id,
             "username": user.username,
+            "env": project_settings.env.lower(),
             "role": UserRole(user.role.value),
         }
 
         return UserOut(
             id=parsed_user["id"],
             username=parsed_user["username"],
+            env=parsed_user["env"],
             role=parsed_user["role"],
         )
