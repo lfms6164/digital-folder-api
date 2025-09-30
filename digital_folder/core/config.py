@@ -1,37 +1,40 @@
 """Core settings"""
 
 import os
+from typing import List
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DOTENV = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 
 class ProjectSettingsBase(BaseSettings):
     """Project Settings Base"""
 
-    # backend_cors_origins: List[AnyHttpUrl] = [HttpUrl("http://localhost:5173")]
-    backend_cors_origins: str = "http://localhost:5173"
-
-
-DOTENV = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
+    # CORS
+    backend_cors_origins: List[str]
 
 
 class ProjectSettings(ProjectSettingsBase):
     """Project settings"""
 
+    # App
     project_name: str
     project_version: str
-    debug: bool
-    env: str
+    debug: bool = False
+    env: str = "prod"
 
-    # mysql_uri: MySQLDsn = MySQLDsn("mysql+pymysql://root:pswrd@localhost")
+    # Database
     dev_database_url: str
     prod_database_url: str
 
+    # JWT
     jwt_secret_key: SecretStr
     jwt_algorithm: str
     access_token_expires_in: int
 
+    # Supabase
     project_url: str
     public_key: str
     service_role_key: str

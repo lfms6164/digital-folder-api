@@ -17,8 +17,7 @@ def make_middleware() -> List[Middleware]:
         middlewares = [
             Middleware(
                 CORSMiddleware,
-                allow_origins=[project_settings.backend_cors_origins],
-                # allow_origins=[str(origin) for origin in project_settings.backend_cors_origins],
+                allow_origins=project_settings.backend_cors_origins,
                 allow_credentials=True,
                 allow_methods=["*"],
                 allow_headers=["*"],
@@ -32,7 +31,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=project_settings.project_name,
         version=project_settings.project_version,
-        docs_url="/",
+        docs_url="/" if project_settings.env != "prod" else None,
         middleware=make_middleware(),
         swagger_ui_parameters={"docExpansion": "none"},
     )
