@@ -8,7 +8,6 @@ from digital_folder.core.config import project_settings
 class SupabaseStorageConfig(BaseModel):
     bucket: str
     folder: str
-    subfolder: str
 
 
 def get_supabase_client() -> Client:

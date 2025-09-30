@@ -12,7 +12,6 @@ from digital_folder.packages.User.schemas import (
     UserDb,
     UserOut,
     UserRole,
-    UserRoleConfig,
 )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")
@@ -39,27 +38,19 @@ def validate_user(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="JWTError")
 
     user = UserDTO(db).get_by_id(user_id)
-    env = project_settings.env.lower()
 
     role_config = {
-        UserRole.ADMIN: UserRoleConfig(
-            filter_id=None, storage_bucket=env, storage_folder="admin"
-        ),
-        UserRole.USER: UserRoleConfig(
-            filter_id=user.id, storage_bucket=env, storage_folder="user"
-        ),
-        UserRole.VIEWER: UserRoleConfig(
-            filter_id=UserDTO(db).get_by_field(UserRole.ADMIN, "role").id,
-            storage_bucket=env,
-            storage_folder="admin",
-        ),
+        UserRole.ADMIN: None,
+        UserRole.USER: user.id,
+        UserRole.VIEWER: UserDTO(db).get_by_field(UserRole.ADMIN, "role").id,
     }
 
     return UserDb(
         id=user.id,
         username=user.username,
         role=user.role,
-        role_config=role_config[user.role],
+        env=project_settings.env.lower(),
+        filter_id=role_config[user.role],
     )
 
 

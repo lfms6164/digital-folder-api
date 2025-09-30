@@ -21,9 +21,7 @@ class TicketDTO:
     def __init__(self, db: DbService):
         self.db = db
         self.supabase_storage_config = SupabaseStorageConfig(
-            bucket=self.db.user.role_config.storage_bucket,
-            folder=self.db.user.role_config.storage_folder,
-            subfolder="tickets",
+            bucket=self.db.user.env, folder="tickets"
         )
 
     def list(self, params: QueryParams) -> PaginatedResponse:

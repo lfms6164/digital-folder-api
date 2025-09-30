@@ -38,8 +38,8 @@ class DbService:
         query = self.db.query(model)
         count = 0
 
-        if self.user.role_config.filter_id:
-            query = query.filter(model.created_by == self.user.role_config.filter_id)
+        if self.user.filter_id:
+            query = query.filter(model.created_by == self.user.filter_id)
 
         if params:
             if params.filters:

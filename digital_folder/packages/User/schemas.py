@@ -21,31 +21,25 @@ class UserRole(str, Enum):
     VIEWER = "VIEWER"
 
 
-class UserRoleConfig(BaseModel):
-    filter_id: Optional[UUID] = None
-    storage_bucket: str
-    storage_folder: str
-
-
 class UserBase(BaseModel):
     """User Base schema"""
 
     id: UUID
     username: str
     password: SecretStr
-    env: str
     role: UserRole
-    role_config: UserRoleConfig
+    env: str
+    filter_id: Optional[UUID] = None
 
 
 UserOut = create_schema_with_exclusions(
     schema_name="UserOut",
     base_schema=UserBase,
-    excluding_fields=["password", "role_config"],
+    excluding_fields=["password", "filter_id"],
 )
 
 UserDb = create_schema_with_exclusions(
     schema_name="UserDb",
     base_schema=UserBase,
-    excluding_fields=["password", "env"],
+    excluding_fields=["password"],
 )

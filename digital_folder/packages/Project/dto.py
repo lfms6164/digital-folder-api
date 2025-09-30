@@ -21,9 +21,7 @@ class ProjectDTO:
     def __init__(self, db: DbService):
         self.db = db
         self.supabase_storage_config = SupabaseStorageConfig(
-            bucket=self.db.user.role_config.storage_bucket,
-            folder=self.db.user.role_config.storage_folder,
-            subfolder="projects",
+            bucket=self.db.user.env, folder="projects"
         )
 
     def list(self, params: QueryParams) -> PaginatedResponse:
@@ -78,10 +76,10 @@ class ProjectDTO:
             validate_ownership(TagDTO(self.db), project_data.tag_ids, True)
         validate_unique(self.db, Project, project_data.name)
 
+        if project_data.repo_url:
+            project_data.repo_url = str(project_data.repo_url)
+
         project_dict = project_data.dict(exclude={"tags", "tag_ids"})
-        project_dict["repo_url"] = (
-            str(project_data.repo_url) if project_data.repo_url else None
-        )
         project_dict["created_by"] = self.db.user.id
         project = self.db.create(Project, project_dict)
 
@@ -114,6 +112,9 @@ class ProjectDTO:
             validate_ownership(TagDTO(self.db), project_data.tag_ids, True)
         if project_data.name:
             validate_unique(self.db, Project, project_data.name)
+
+        if project_data.repo_url:
+            project_data.repo_url = str(project_data.repo_url)
 
         project_dict = project_data.dict(exclude_unset=True, exclude={"tag_ids"})
         if project_dict:

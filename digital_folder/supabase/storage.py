@@ -13,17 +13,16 @@ from digital_folder.supabase.client import (
 supabase_router = APIRouter()
 
 
-@supabase_router.post(path="/upload_files/{bucket}/{folder}/{subfolder}")
+@supabase_router.post(path="/upload_files/{bucket}/{folder}")
 async def upload_files(
     bucket: str,
     folder: str,
-    subfolder: str,
     files: List[UploadFile] = File(...),
     _: DbService = Depends(get_db_with_user),
 ) -> dict[str, List[str]]:
     """Upload files to Supabase and return the file names"""
 
-    config = SupabaseStorageConfig(bucket=bucket, folder=folder, subfolder=subfolder)
+    config = SupabaseStorageConfig(bucket=bucket, folder=folder)
     file_names = await SupabaseDTO(config).upload_files(files)
 
     return {"file_names": file_names}
@@ -34,7 +33,6 @@ class SupabaseDTO:
         self.supabase_client = get_supabase_client()
         self.bucket = validate_bucket(config.bucket)
         self.folder = config.folder
-        self.subfolder = config.subfolder
 
     async def upload_files(self, files: List[UploadFile] = File(...)) -> List[str]:
         """
@@ -58,7 +56,7 @@ class SupabaseDTO:
             file_bytes = await file.read()
 
             self.supabase_client.storage.from_(self.bucket).upload(
-                path=f"{self.folder}/{self.subfolder}/temp/{file.filename}",
+                path=f"{self.folder}/temp/{file.filename}",
                 file=file_bytes,
                 file_options={
                     "cache-control": "3600",
@@ -83,7 +81,7 @@ class SupabaseDTO:
         """
 
         files = self.supabase_client.storage.from_(self.bucket).list(
-            f"{self.folder}/{self.subfolder}/{subfolder}",
+            f"{self.folder}/{subfolder}",
             {
                 "limit": 100,
                 "offset": 0,
@@ -104,8 +102,8 @@ class SupabaseDTO:
 
         for file in files:
             self.supabase_client.storage.from_(self.bucket).move(
-                f"{self.folder}/{self.subfolder}/temp/{file}",
-                f"{self.folder}/{self.subfolder}/{subfolder}/{file}",
+                f"{self.folder}/temp/{file}",
+                f"{self.folder}/{subfolder}/{file}",
             )
 
     def delete_files(self, files: List[str], subfolder: str) -> None:
@@ -117,7 +115,7 @@ class SupabaseDTO:
             subfolder (str): The subfolder name.
         """
 
-        files = [f"{self.folder}/{self.subfolder}/{subfolder}/{file}" for file in files]
+        files = [f"{self.folder}/{subfolder}/{file}" for file in files]
 
         self.supabase_client.storage.from_(self.bucket).remove(files)
 
