@@ -24,6 +24,7 @@ class ProjectSettings(ProjectSettingsBase):
     project_version: str
     debug: bool = False
     env: str = "prod"
+    port: int
 
     # Database
     dev_database_url: str
