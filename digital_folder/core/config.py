@@ -22,8 +22,8 @@ class ProjectSettings(ProjectSettingsBase):
     # App
     project_name: str
     project_version: str
-    debug: bool = False
-    env: str = "prod"
+    debug: Optional[bool] = False
+    env: str
     port: Optional[int] = None
 
     # Database
