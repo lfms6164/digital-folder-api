@@ -1,7 +1,7 @@
 """Core settings"""
 
 import os
-from typing import List
+from typing import List, Optional
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -24,10 +24,10 @@ class ProjectSettings(ProjectSettingsBase):
     project_version: str
     debug: bool = False
     env: str = "prod"
-    port: int
+    port: Optional[int] = None
 
     # Database
-    dev_database_url: str
+    dev_database_url: Optional[str] = None
     prod_database_url: str
 
     # JWT
