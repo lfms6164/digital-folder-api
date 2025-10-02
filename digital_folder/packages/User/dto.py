@@ -17,7 +17,7 @@ class UserDTO:
         self.db = db
 
     def login(self, form_data: UserLogin) -> Any:
-        user = self.get_by_field(form_data.username, "username")
+        user = self.db.get_by_field(User, form_data.username, "username")
         if not user:
             raise HTTPException(
                 status_code=400,
@@ -56,28 +56,28 @@ class UserDTO:
         if not user:
             raise HTTPException(status_code=400, detail=f"User {user_id} not found.")
 
-        return self.user_parser(user=user)
+        return self.user_parser(user)
 
-    def get_by_field(self, value: str, user_column_name: str) -> UserOut:
+    def get_by_field(self, value: str, column_name: str) -> UserOut:
         """
         Retrieve a user by any user field.
 
         Args:
             value (str): The value to get the user.
-            user_column_name (str): The column to search the value from.
+            column_name (str): The column to search the value from.
 
         Returns:
             UserOut: The user data.
         """
 
-        user = self.db.get_by_field(User, value, user_column_name)
+        user = self.db.get_by_field(User, value, column_name)
         if not user:
             raise HTTPException(
                 status_code=400,
-                detail=f"User: { {user_column_name: value} } not found.",
+                detail=f"User: { {column_name: value} } not found.",
             )
 
-        return user
+        return self.user_parser(user)
 
     @staticmethod
     def user_parser(user: Any) -> UserOut:
@@ -91,16 +91,9 @@ class UserDTO:
             UserOut: The parsed user data.
         """
 
-        parsed_user = {
-            "id": user.id,
-            "username": user.username,
-            "env": project_settings.env.lower(),
-            "role": UserRole(user.role.value),
-        }
-
         return UserOut(
-            id=parsed_user["id"],
-            username=parsed_user["username"],
-            env=parsed_user["env"],
-            role=parsed_user["role"],
+            id=user.id,
+            username=user.username,
+            env=project_settings.env.lower(),
+            role=UserRole(user.role.value),
         )
