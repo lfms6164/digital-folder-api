@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from digital_folder.helpers.utils import create_schema_with_exclusions
 
 
-class TicketState(str, Enum):
+class TicketStatus(str, Enum):
     OPEN = "OPEN"
     CLOSED = "CLOSED"
 
@@ -20,7 +20,7 @@ class TicketBase(BaseModel):
     name: str
     description: str
     image: Optional[str] = None
-    state: TicketState
+    status: TicketStatus
     created_by: UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -29,7 +29,7 @@ class TicketBase(BaseModel):
 TicketCreate = create_schema_with_exclusions(
     schema_name="TicketCreate",
     base_schema=TicketBase,
-    excluding_fields=["id", "state", "created_by", "created_at", "updated_at"],
+    excluding_fields=["id", "status", "created_by", "created_at", "updated_at"],
 )
 
 TicketPatch = create_schema_with_exclusions(

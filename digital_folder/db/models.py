@@ -96,7 +96,7 @@ class Group(Base):
     tags = relationship("Tag", back_populates="group")
 
 
-class TicketState(enum.Enum):
+class TicketStatus(enum.Enum):
     OPEN = "OPEN"
     CLOSED = "CLOSED"
 
@@ -108,7 +108,7 @@ class Ticket(Base):
     name = Column(String, unique=True, nullable=False)
     description = Column(Text, nullable=False)
     image = Column(String, nullable=True)
-    state = Column(Enum(TicketState), nullable=False, default=TicketState.OPEN)
+    status = Column(Enum(TicketStatus), nullable=False, default=TicketStatus.OPEN)
     created_by = Column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
     )

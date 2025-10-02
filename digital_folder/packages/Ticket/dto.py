@@ -11,7 +11,7 @@ from digital_folder.packages.Ticket.schemas import (
     TicketCreate,
     TicketPatch,
     TicketOut,
-    TicketState,
+    TicketStatus,
 )
 from digital_folder.supabase.client import SupabaseStorageConfig
 from digital_folder.supabase.storage import SupabaseDTO
@@ -134,7 +134,7 @@ class TicketDTO:
             "name": ticket.name,
             "description": ticket.description,
             "image": ticket.image or None,
-            "state": TicketState(ticket.state.value),
+            "status": TicketStatus(ticket.status.value),
             "created_by": ticket.created_by,
             "created_at": ticket.created_at,
             "updated_at": ticket.updated_at or None,
@@ -145,7 +145,7 @@ class TicketDTO:
             name=parsed_ticket["name"],
             description=parsed_ticket["description"],
             image=parsed_ticket["image"],
-            state=parsed_ticket["state"],
+            status=parsed_ticket["status"],
             created_by=parsed_ticket["created_by"],
             created_at=parsed_ticket["created_at"],
             updated_at=parsed_ticket["updated_at"],
