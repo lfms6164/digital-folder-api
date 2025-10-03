@@ -2,27 +2,26 @@ from typing import List
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
-from digital_folder.db.dependencies import get_db_validate_role
-from digital_folder.db.service import DbService
+from digital_folder.core.dependencies import validate_role
+from digital_folder.packages.User.schemas import UserDb
 from digital_folder.supabase.client import (
     get_supabase_client,
     SupabaseStorageConfig,
-    validate_bucket,
+    validate_folder,
 )
 
 supabase_router = APIRouter()
 
 
-@supabase_router.post(path="/upload_files/{bucket}/{folder}")
+@supabase_router.post(path="/upload_files/{folder}")
 async def upload_files(
-    bucket: str,
     folder: str,
     files: List[UploadFile] = File(...),
-    _: DbService = Depends(get_db_validate_role),
+    user: UserDb = Depends(validate_role),
 ) -> dict[str, List[str]]:
-    """Upload files to Supabase and return the file names"""
+    """Upload files to Supabase storage and return the file names"""
 
-    config = SupabaseStorageConfig(bucket=bucket, folder=folder)
+    config = SupabaseStorageConfig(bucket=user.env, folder=folder)
     file_names = await SupabaseDTO(config).upload_files(files)
 
     return {"file_names": file_names}
@@ -31,8 +30,8 @@ async def upload_files(
 class SupabaseDTO:
     def __init__(self, config: SupabaseStorageConfig):
         self.supabase_client = get_supabase_client()
-        self.bucket = validate_bucket(config.bucket)
-        self.folder = config.folder
+        self.bucket = config.bucket
+        self.folder = validate_folder(config.folder)
 
     async def upload_files(self, files: List[UploadFile] = File(...)) -> List[str]:
         """

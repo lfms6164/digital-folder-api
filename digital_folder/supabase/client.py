@@ -11,25 +11,32 @@ class SupabaseStorageConfig(BaseModel):
 
 
 def get_supabase_client() -> Client:
+    """
+    Initialize a new Supabase client using the unique Supabase project url and the unique Supabase service role key.
+
+
+    Returns:
+        Client: The Supabase client.
+    """
     return create_client(
         project_settings.project_url, project_settings.service_role_key
     )
 
 
-def validate_bucket(bucket: str) -> str:
+def validate_folder(folder: str) -> str:
     """
-    Checks if provided bucket name is valid.
+    Checks if provided folder name is valid.
 
     Args:
-        bucket (str): The bucket name.
+        folder (str): The folder name.
 
     Returns:
-        str: The bucket name.
+        str: The folder name.
     """
 
-    if not bucket or bucket not in ["dev", "prod"]:
+    if not folder or folder not in ["projects", "tickets"]:
         raise HTTPException(
-            status_code=404, detail="Supabase storage bucket is invalid."
+            status_code=404, detail="Supabase storage folder is invalid."
         )
 
-    return bucket
+    return folder
