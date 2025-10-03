@@ -3,9 +3,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
+from digital_folder.core.dependencies import get_db_validate_role, get_db_validate_user
 from digital_folder.core.pagination.types import PaginatedResponse
 from digital_folder.core.pagination.utils import query_params_parser
-from digital_folder.db.dependencies import get_db_validate_role, get_db_validate_user
 from digital_folder.db.service import DbService
 from digital_folder.packages.Tag.dto import TagDTO
 from digital_folder.packages.Tag.schemas import TagCreate, TagPatch, TagOut

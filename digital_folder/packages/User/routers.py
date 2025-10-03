@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from digital_folder.db.db import get_db
+from digital_folder.db.dependencies import get_db
 from digital_folder.db.service import DbService
 from digital_folder.packages.User.dto import UserDTO
 from digital_folder.packages.User.schemas import UserLoginForm, UserLoginResponse

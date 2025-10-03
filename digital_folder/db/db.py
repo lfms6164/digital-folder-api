@@ -25,10 +25,3 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Base model class (used by models.py)
 Base = declarative_base()
-
-
-def get_db():
-    from digital_folder.db.service import DbService
-
-    with DbService() as db:
-        yield db

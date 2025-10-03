@@ -6,7 +6,7 @@ from sqlalchemy import asc, desc
 from digital_folder.core.pagination.types import QueryParams
 from digital_folder.db.db import SessionLocal
 from digital_folder.db.models import Group, Project, Tag
-from digital_folder.helpers.utils import ModelType
+from digital_folder.db.types import ModelType
 from digital_folder.packages.User.schemas import UserDb
 
 

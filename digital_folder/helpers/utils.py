@@ -1,10 +1,6 @@
-from typing import List, Optional, Type, TypeVar
+from typing import List, Optional, Type
 
 from pydantic import BaseModel, create_model
-
-from digital_folder.db.db import Base
-
-ModelType = TypeVar("ModelType", bound=Base)
 
 
 def create_schema_with_exclusions(

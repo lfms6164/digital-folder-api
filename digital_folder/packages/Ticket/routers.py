@@ -3,9 +3,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
+from digital_folder.core.dependencies import get_db_validate_role, get_db_validate_user
 from digital_folder.core.pagination.types import PaginatedResponse
 from digital_folder.core.pagination.utils import query_params_parser
-from digital_folder.db.dependencies import get_db_validate_role, get_db_validate_user
 from digital_folder.db.service import DbService
 from digital_folder.packages.Ticket.dto import TicketDTO
 from digital_folder.packages.Ticket.schemas import TicketCreate, TicketPatch, TicketOut

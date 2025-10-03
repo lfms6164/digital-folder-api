@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import HTTPException
 
 from digital_folder.db.service import DbService
-from digital_folder.helpers.utils import ModelType
+from digital_folder.db.types import ModelType
 from digital_folder.packages.User.schemas import UserRole
 
 

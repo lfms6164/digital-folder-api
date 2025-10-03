@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 
 from digital_folder.core.config import project_settings
-from digital_folder.db.db import get_db
+from digital_folder.db.dependencies import get_db
 from digital_folder.db.service import DbService
 from digital_folder.packages.User.dto import UserDTO
 from digital_folder.packages.User.schemas import (
@@ -82,3 +82,13 @@ def validate_role(user: UserDb = Depends(validate_user)) -> UserDb:
             detail=f"User '{user.username}' does not have permission to perform this action.",
         )
     return user
+
+
+def get_db_validate_user(user: UserDb = Depends(validate_user)):
+    with DbService(user) as db:
+        yield db
+
+
+def get_db_validate_role(user: UserDb = Depends(validate_role)):
+    with DbService(user) as db:
+        yield db
