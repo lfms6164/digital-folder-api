@@ -1,4 +1,3 @@
-from typing import Any, List
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -26,10 +25,14 @@ class ProjectDTO:
 
     def list(self, params: QueryParams) -> PaginatedResponse:
         """
-        Retrieve all projects from the database.
+        Retrieve projects from the database.
+
+        Args:
+            params (QueryParams): Params to select what data to retrieve.
+            Can include filters, items per page, page, search and sort by.
 
         Returns:
-            List[ProjectOut]: A list of all projects.
+            PaginatedResponse: Contains a list of projects and the count.
         """
 
         projects, count = self.db.get_all(Project, params)
@@ -160,7 +163,7 @@ class ProjectDTO:
 
         self.db.delete(Project, project_id)
 
-    def project_parser(self, project: Any) -> ProjectOut:
+    def project_parser(self, project: Project) -> ProjectOut:
         """
         This function takes project data and turns it into a ProjectOut object.
 

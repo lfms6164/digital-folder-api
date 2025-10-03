@@ -1,4 +1,3 @@
-from typing import Any
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -9,14 +8,31 @@ from digital_folder.db.service import DbService
 from digital_folder.helpers.secrets import verify_password
 from digital_folder.packages.AccessToken.dto import create_access_token
 from digital_folder.packages.AccessToken.schemas import TokenData
-from digital_folder.packages.User.schemas import UserLogin, UserRole, UserOut
+from digital_folder.packages.User.schemas import (
+    UserLoginForm,
+    UserLoginResponse,
+    UserRole,
+    UserOut,
+)
 
 
 class UserDTO:
     def __init__(self, db: DbService):
         self.db = db
 
-    def login(self, form_data: UserLogin) -> Any:
+    def login(self, form_data: UserLoginForm) -> UserLoginResponse:
+        """
+        Authenticate a user using their credentials and generate a JWT access token.
+        Starts by checking if user exists in the database, then validates password,
+        then creates an access token and returns the UserLoginResponse.
+
+        Args:
+            form_data (UserLoginForm): The login form data containing the username and password.
+
+        Returns:
+            UserLoginResponse: Contains the JWT access token, its type and the authenticated user.
+        """
+
         user = self.db.get_by_field(User, form_data.username, "username")
         if not user:
             raise HTTPException(
@@ -35,11 +51,9 @@ class UserDTO:
 
         parsed_user = self.user_parser(user)
 
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user": parsed_user,
-        }
+        return UserLoginResponse(
+            access_token=access_token, token_type="bearer", user=parsed_user
+        )
 
     def get_by_id(self, user_id: UUID) -> UserOut:
         """
@@ -80,7 +94,7 @@ class UserDTO:
         return self.user_parser(user)
 
     @staticmethod
-    def user_parser(user: Any) -> UserOut:
+    def user_parser(user: User) -> UserOut:
         """
         This function takes user data and turns it into a UserOut object.
 

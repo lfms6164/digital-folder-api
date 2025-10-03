@@ -17,6 +17,16 @@ def get_supabase_client() -> Client:
 
 
 def validate_bucket(bucket: str) -> str:
+    """
+    Checks if provided bucket name is valid.
+
+    Args:
+        bucket (str): The bucket name.
+
+    Returns:
+        str: The bucket name.
+    """
+
     if not bucket or bucket not in ["dev", "prod"]:
         raise HTTPException(
             status_code=404, detail="Supabase storage bucket is invalid."

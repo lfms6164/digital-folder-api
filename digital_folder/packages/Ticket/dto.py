@@ -1,4 +1,3 @@
-from typing import Any, List
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -26,10 +25,14 @@ class TicketDTO:
 
     def list(self, params: QueryParams) -> PaginatedResponse:
         """
-        Retrieve all tickets from the database.
+        Retrieve tickets from the database.
+
+        Args:
+            params (QueryParams): Params to select what data to retrieve.
+            Can include filters, items per page, page, search and sort by.
 
         Returns:
-            List[TicketOut]: A list of all tickets.
+            PaginatedResponse: Contains a list of tickets and the count.
         """
 
         tickets, count = self.db.get_all(Ticket, params)
@@ -118,7 +121,7 @@ class TicketDTO:
         self.db.delete(Ticket, ticket_id)
 
     @staticmethod
-    def ticket_parser(ticket: Any) -> TicketOut:
+    def ticket_parser(ticket: Ticket) -> TicketOut:
         """
         This function takes ticket data and turns it into a TicketOut object.
 

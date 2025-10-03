@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from digital_folder.db.db import get_db
 from digital_folder.db.service import DbService
 from digital_folder.packages.User.dto import UserDTO
-from digital_folder.packages.User.schemas import UserLogin
+from digital_folder.packages.User.schemas import UserLoginForm, UserLoginResponse
 
 user_router = APIRouter()
 
@@ -16,9 +16,9 @@ class UserRouter:
 
     async def login(
         self,
-        form_data: UserLogin = Depends(),
+        form_data: UserLoginForm = Depends(),
         db: DbService = Depends(get_db),
-    ):
+    ) -> UserLoginResponse:
         """User login"""
 
         return self.model_dto(db).login(form_data)

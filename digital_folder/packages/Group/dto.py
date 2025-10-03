@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Union
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -21,10 +21,14 @@ class GroupDTO:
 
     def list(self, params: QueryParams) -> PaginatedResponse:
         """
-        Retrieve all groups from the database.
+        Retrieve groups from the database.
+
+        Args:
+            params (QueryParams): Params to select what data to retrieve.
+            Can include filters, items per page, page, search and sort by.
 
         Returns:
-            List[GroupOut]: A list of all groups.
+            PaginatedResponse: Contains a list of groups and the count.
         """
 
         groups, count = self.db.get_all(Group, params)
@@ -111,7 +115,7 @@ class GroupDTO:
         self.db.delete(Group, group.id)
 
     def group_parser(
-        self, group: Any, include_tags: Optional[bool] = False
+        self, group: Group, include_tags: Optional[bool] = False
     ) -> Union[GroupOut, GroupWithoutTagsOut]:
         """
         This function takes group data and turns it into a GroupOut object.

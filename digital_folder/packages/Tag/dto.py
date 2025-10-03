@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Union
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -22,10 +22,14 @@ class TagDTO:
 
     def list(self, params: QueryParams) -> PaginatedResponse:
         """
-        Retrieve all tags from the database.
+        Retrieve tags from the database.
+
+        Args:
+            params (QueryParams): Params to select what data to retrieve.
+            Can include filters, items per page, page, search and sort by.
 
         Returns:
-            List[TagOut]: A list of all tags.
+            PaginatedResponse: Contains a list of tags and the count.
         """
 
         tags, count = self.db.get_all(Tag, params)
@@ -108,7 +112,7 @@ class TagDTO:
         self.db.delete(Tag, tag_id)
 
     def tag_parser(
-        self, tag: Any, include_group: Optional[bool] = True
+        self, tag: Tag, include_group: Optional[bool] = True
     ) -> Union[TagOut, TagWithoutGroupOut]:
         """
         This function takes tag data and turns it into a TagOut object.

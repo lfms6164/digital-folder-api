@@ -8,7 +8,9 @@ from digital_folder.helpers.utils import ModelType
 from digital_folder.packages.User.schemas import UserRole
 
 
-def validate_ownership(dto: Any, obj_ids: List[UUID], relation: Optional[bool] = False):
+def validate_ownership(
+    dto: Any, obj_ids: List[UUID], relation: Optional[bool] = False
+) -> None:
     """
     Safety check to validate if the user executing an action has ownership over the objects.
 
@@ -39,7 +41,7 @@ def validate_ownership(dto: Any, obj_ids: List[UUID], relation: Optional[bool] =
             )
 
 
-def validate_unique(db: DbService, model: Type[ModelType], name: str):
+def validate_unique(db: DbService, model: Type[ModelType], name: str) -> None:
     """
     Safety check used at CREATE or UPDATE to validate if the object being created or updated has a unique name.
 

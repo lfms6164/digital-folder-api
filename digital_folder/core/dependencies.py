@@ -19,7 +19,19 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")
 
 def validate_user(
     db: DbService = Depends(get_db), token: str = Depends(oauth2_scheme)
-) -> UUID:
+) -> UserDb:
+    """
+    Validate and decode the JWT access token, then return the authenticated user.
+    This dependency is used to protect routes that require authentication.
+
+    Args:
+        db (DbService): The database service dependency.
+        token (str): The JWT access token extracted from the Authorization header.
+
+    Returns:
+        UserDb: The authenticated user, including role and environment data.
+    """
+
     try:
         payload = jwt.decode(
             token,
@@ -55,6 +67,16 @@ def validate_user(
 
 
 def validate_role(user: UserOut = Depends(validate_user)) -> UserOut:
+    """
+    Protect some actions by checking if user has write permissions based on its role.
+
+    Args:
+        user (UserOut): The authenticated user returned by 'validate_user'.
+
+    Returns:
+        UserOut: The user if passes role check.
+    """
+
     if user.role not in [UserRole.ADMIN, UserRole.USER]:
         raise HTTPException(
             status_code=403,
