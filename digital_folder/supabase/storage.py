@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
-from digital_folder.db.dependencies import get_db_with_user
+from digital_folder.db.dependencies import get_db_validate_role
 from digital_folder.db.service import DbService
 from digital_folder.supabase.client import (
     get_supabase_client,
@@ -18,7 +18,7 @@ async def upload_files(
     bucket: str,
     folder: str,
     files: List[UploadFile] = File(...),
-    _: DbService = Depends(get_db_with_user),
+    _: DbService = Depends(get_db_validate_role),
 ) -> dict[str, List[str]]:
     """Upload files to Supabase and return the file names"""
 

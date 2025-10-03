@@ -3,8 +3,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from digital_folder.core.pagination import PaginatedResponse, query_params_parser
-from digital_folder.db.dependencies import get_db_with_user
+from digital_folder.core.pagination.types import PaginatedResponse
+from digital_folder.core.pagination.utils import query_params_parser
+from digital_folder.db.dependencies import get_db_validate_role, get_db_validate_user
 from digital_folder.db.service import DbService
 from digital_folder.packages.Project.dto import ProjectDTO
 from digital_folder.packages.Project.schemas import (
@@ -34,7 +35,7 @@ class ProjectRouter:
         self,
         filters: Optional[str] = Query(None, description="Comma-separated tag IDs"),
         search: Optional[str] = Query(None, description="Search string"),
-        db: DbService = Depends(get_db_with_user),
+        db: DbService = Depends(get_db_validate_user),
     ) -> PaginatedResponse:
         """List projects"""
 
@@ -49,7 +50,7 @@ class ProjectRouter:
     async def get_by_id(
         self,
         project_id: UUID,
-        db: DbService = Depends(get_db_with_user),
+        db: DbService = Depends(get_db_validate_user),
     ) -> ProjectOut:
         """Get project by id"""
 
@@ -58,7 +59,7 @@ class ProjectRouter:
     async def create(
         self,
         project: ProjectCreate,
-        db: DbService = Depends(get_db_with_user),
+        db: DbService = Depends(get_db_validate_role),
     ) -> ProjectOut:
         """Create project"""
 
@@ -68,7 +69,7 @@ class ProjectRouter:
         self,
         project_id: UUID,
         project: ProjectPatch,
-        db: DbService = Depends(get_db_with_user),
+        db: DbService = Depends(get_db_validate_role),
     ) -> ProjectOut:
         """Edit project"""
 
@@ -77,7 +78,7 @@ class ProjectRouter:
     async def delete(
         self,
         project_id: UUID,
-        db: DbService = Depends(get_db_with_user),
+        db: DbService = Depends(get_db_validate_role),
     ) -> None:
         """Delete project"""
 

@@ -3,8 +3,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from digital_folder.core.pagination import PaginatedResponse, query_params_parser
-from digital_folder.db.dependencies import get_db_with_user
+from digital_folder.core.pagination.types import PaginatedResponse
+from digital_folder.core.pagination.utils import query_params_parser
+from digital_folder.db.dependencies import get_db_validate_role, get_db_validate_user
 from digital_folder.db.service import DbService
 from digital_folder.packages.Tag.dto import TagDTO
 from digital_folder.packages.Tag.schemas import TagCreate, TagPatch, TagOut
@@ -38,7 +39,7 @@ class TagRouter:
             description="""JSON string like [{"key":"name","order":"desc"}]""",
             alias="sortBy",
         ),
-        db: DbService = Depends(get_db_with_user),
+        db: DbService = Depends(get_db_validate_user),
     ) -> PaginatedResponse:
         """List tags"""
 
@@ -56,7 +57,7 @@ class TagRouter:
     async def create(
         self,
         tag: TagCreate,
-        db: DbService = Depends(get_db_with_user),
+        db: DbService = Depends(get_db_validate_role),
     ) -> TagOut:
         """Create tag"""
 
@@ -66,14 +67,14 @@ class TagRouter:
         self,
         tag_id: UUID,
         tag: TagPatch,
-        db: DbService = Depends(get_db_with_user),
+        db: DbService = Depends(get_db_validate_role),
     ) -> TagOut:
         """Edit tag"""
 
         return self.model_dto(db).edit_by_id(tag_id, tag)
 
     async def delete(
-        self, tag_id: UUID, db: DbService = Depends(get_db_with_user)
+        self, tag_id: UUID, db: DbService = Depends(get_db_validate_role)
     ) -> None:
         """Delete tag"""
 

@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import HTTPException
 
 from digital_folder.core.auth import validate_ownership, validate_unique
-from digital_folder.core.pagination import PaginatedResponse, QueryParams
+from digital_folder.core.pagination.types import PaginatedResponse, QueryParams
 from digital_folder.db.models import Project, Tag
 from digital_folder.db.service import DbService
 from digital_folder.packages.Project.schemas import (

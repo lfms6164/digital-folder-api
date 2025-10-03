@@ -10,7 +10,6 @@ from digital_folder.db.service import DbService
 from digital_folder.packages.User.dto import UserDTO
 from digital_folder.packages.User.schemas import (
     UserDb,
-    UserOut,
     UserRole,
 )
 
@@ -66,20 +65,20 @@ def validate_user(
     )
 
 
-def validate_role(user: UserOut = Depends(validate_user)) -> UserOut:
+def validate_role(user: UserDb = Depends(validate_user)) -> UserDb:
     """
     Protect some actions by checking if user has write permissions based on its role.
 
     Args:
-        user (UserOut): The authenticated user returned by 'validate_user'.
+        user (UserDb): The authenticated user returned by 'validate_user'.
 
     Returns:
-        UserOut: The user if passes role check.
+        UserDb: The user if passes role check.
     """
 
     if user.role not in [UserRole.ADMIN, UserRole.USER]:
         raise HTTPException(
             status_code=403,
-            detail=f"User {user.id} does not have permission to perform this action.",
+            detail=f"User '{user.username}' does not have permission to perform this action.",
         )
     return user

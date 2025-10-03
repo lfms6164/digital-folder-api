@@ -3,8 +3,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from digital_folder.core.pagination import PaginatedResponse, query_params_parser
-from digital_folder.db.dependencies import get_db_with_user
+from digital_folder.core.pagination.types import PaginatedResponse
+from digital_folder.core.pagination.utils import query_params_parser
+from digital_folder.db.dependencies import get_db_validate_role, get_db_validate_user
 from digital_folder.db.service import DbService
 from digital_folder.packages.Ticket.dto import TicketDTO
 from digital_folder.packages.Ticket.schemas import TicketCreate, TicketPatch, TicketOut
@@ -28,7 +29,7 @@ class TicketRouter:
         filters: Optional[str] = Query(
             None, description="""User UUID ex: {"created_by":{id}}"""
         ),
-        db: DbService = Depends(get_db_with_user),
+        db: DbService = Depends(get_db_validate_user),
     ) -> PaginatedResponse:
         """List tickets"""
 
@@ -42,7 +43,7 @@ class TicketRouter:
     async def create(
         self,
         ticket: TicketCreate,
-        db: DbService = Depends(get_db_with_user),
+        db: DbService = Depends(get_db_validate_role),
     ) -> TicketOut:
         """Create ticket"""
 
@@ -52,14 +53,14 @@ class TicketRouter:
         self,
         ticket_id: UUID,
         ticket: TicketPatch,
-        db: DbService = Depends(get_db_with_user),
+        db: DbService = Depends(get_db_validate_role),
     ) -> TicketOut:
         """Edit ticket"""
 
         return self.model_dto(db).edit_by_id(ticket_id, ticket)
 
     async def delete(
-        self, ticket_id: UUID, db: DbService = Depends(get_db_with_user)
+        self, ticket_id: UUID, db: DbService = Depends(get_db_validate_role)
     ) -> None:
         """Delete ticket"""
 
