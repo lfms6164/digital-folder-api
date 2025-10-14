@@ -29,7 +29,7 @@ class TicketRouter:
         filters: Optional[str] = Query(
             None, description="""User UUID ex: {"created_by":{id}}"""
         ),
-        db: DbService = Depends(get_db_validate_user),
+        db: DbService = Depends(get_db_validate_role),
     ) -> PaginatedResponse:
         """List tickets"""
 
