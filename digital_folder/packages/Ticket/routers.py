@@ -43,7 +43,7 @@ class TicketRouter:
     async def create(
         self,
         ticket: TicketCreate,
-        db: DbService = Depends(get_db_validate_role),
+        db: DbService = Depends(get_db_validate_user),
     ) -> TicketOut:
         """Create ticket"""
 
