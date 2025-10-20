@@ -45,7 +45,7 @@ class DbService:
             if params.filters:
                 created_by = params.filters.pop("created_by", None)
                 if created_by:
-                    query = query.filter(model.created_by == created_by)
+                    query = query.filter(model.created_by.in_(created_by))
 
                 if params.filters:
                     filters_map = {

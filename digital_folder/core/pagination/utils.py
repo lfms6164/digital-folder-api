@@ -35,11 +35,16 @@ def query_params_parser(
         if parsed_filters and parsed_filters.get("created_by"):
             from digital_folder.packages.User.dto import UserDTO
 
-            parsed_filters["created_by"] = (
-                UserDTO(db)
-                .get_by_field(UserRole(parsed_filters["created_by"]), "role")
-                .id
-            )
+            user_dto = UserDTO(db)
+
+            created_by_role = [parsed_filters.get("created_by")]
+            if UserRole.USER.value in created_by_role:
+                created_by_role.append(UserRole.VIEWER.value)
+
+            parsed_filters["created_by"] = [
+                user_dto.get_by_field(UserRole(role), "role").id
+                for role in created_by_role
+            ]
 
     parsed_sort_by = []
     if sort_by:
