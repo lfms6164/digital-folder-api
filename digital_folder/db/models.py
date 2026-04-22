@@ -7,6 +7,22 @@ from sqlalchemy.orm import relationship
 
 from digital_folder.db.db import Base
 
+
+class UserRole(enum.Enum):
+    ADMIN = "ADMIN"
+    USER = "USER"
+    VIEWER = "VIEWER"
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    username = Column(String, unique=True, nullable=False, index=True)
+    password = Column(String, nullable=False)
+    role = Column(Enum(UserRole), unique=True, nullable=False)
+
+
 project_tag_relations = Table(
     "project_tag_relations",
     Base.metadata,
@@ -25,19 +41,17 @@ project_tag_relations = Table(
 )
 
 
-class UserRole(enum.Enum):
-    ADMIN = "ADMIN"
-    USER = "USER"
-    VIEWER = "VIEWER"
-
-
-class User(Base):
-    __tablename__ = "users"
+class ProjectUrl(Base):
+    __tablename__ = "project_urls"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    username = Column(String, unique=True, nullable=False, index=True)
-    password = Column(String, nullable=False)
-    role = Column(Enum(UserRole), unique=True, nullable=False)
+    name = Column(String, nullable=True)
+    url = Column(String, nullable=False)
+    project_id = Column(
+        UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False, index=True
+    )
+
+    project = relationship("Project", back_populates="urls")
 
 
 class Project(Base):
@@ -46,7 +60,9 @@ class Project(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, unique=True, nullable=False)
     images = Column(ARRAY(String), nullable=True)
-    repo_url = Column(String, nullable=True)
+    urls = relationship(
+        "ProjectUrl", back_populates="project", cascade="all, delete-orphan"
+    )
     introduction = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
     created_by = Column(
