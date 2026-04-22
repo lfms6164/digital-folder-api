@@ -36,6 +36,7 @@ class TicketRouter:
         params = query_params_parser(
             db=db,
             filters=filters,
+            items_per_page=-1,
         )
 
         return self.model_dto(db).list(params)
