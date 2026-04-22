@@ -1,18 +1,25 @@
-from typing import Optional, List
+from typing import Generic, List, Optional, TypeVar
 from uuid import UUID
 
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 
 from digital_folder.helpers.utils import create_schema_with_exclusions
+from digital_folder.packages.ProjectUrl.schemas import (
+    ProjectUrlCreate,
+    ProjectUrlPatch,
+    ProjectUrlOut,
+)
 from digital_folder.packages.Tag.schemas import TagOut
 
+UrlType = TypeVar("UrlType")
 
-class ProjectBase(BaseModel):
+
+class ProjectBase(BaseModel, Generic[UrlType]):
     """Project Base schema"""
 
     id: UUID
     name: str
-    repo_url: Optional[HttpUrl] = None
+    urls: Optional[List[UrlType]] = None
     introduction: Optional[str] = None
     description: Optional[str] = None
     tags: Optional[List[TagOut]] = None
@@ -21,21 +28,26 @@ class ProjectBase(BaseModel):
     created_by: UUID
 
 
+ProjectBaseCreate = ProjectBase[ProjectUrlCreate]
+ProjectBasePatch = ProjectBase[ProjectUrlPatch]
+ProjectBaseOut = ProjectBase[ProjectUrlOut]
+
+
 ProjectCreate = create_schema_with_exclusions(
     schema_name="ProjectCreate",
-    base_schema=ProjectBase,
+    base_schema=ProjectBaseCreate,
     excluding_fields=["id", "tags", "created_by"],
 )
 
 ProjectPatch = create_schema_with_exclusions(
     schema_name="ProjectPatch",
-    base_schema=ProjectCreate,
+    base_schema=ProjectBasePatch,
     excluding_fields=[],
     optional=True,
 )
 
 ProjectOut = create_schema_with_exclusions(
     schema_name="ProjectOut",
-    base_schema=ProjectBase,
+    base_schema=ProjectBaseOut,
     excluding_fields=[],
 )

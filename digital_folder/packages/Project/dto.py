@@ -11,6 +11,7 @@ from digital_folder.packages.Project.schemas import (
     ProjectPatch,
     ProjectOut,
 )
+from digital_folder.packages.ProjectUrl.dto import ProjectUrlDTO
 from digital_folder.packages.Tag.dto import TagDTO
 from digital_folder.supabase.client import SupabaseStorageConfig
 from digital_folder.supabase.storage import SupabaseDTO
@@ -79,10 +80,7 @@ class ProjectDTO:
             validate_ownership(TagDTO(self.db), project_data.tag_ids, True)
         validate_unique(self.db, Project, project_data.name)
 
-        if project_data.repo_url:
-            project_data.repo_url = str(project_data.repo_url)
-
-        project_dict = project_data.dict(exclude={"tags", "tag_ids"})
+        project_dict = project_data.dict(exclude={"tags", "tag_ids", "urls"})
         project_dict["created_by"] = self.db.user.id
         project = self.db.create(Project, project_dict)
 
@@ -90,6 +88,10 @@ class ProjectDTO:
             self.db.update_relations(
                 Project, Tag, project.id, project_data.tag_ids, "tags"
             )
+
+        if project_data.urls:
+            for url in project_data.urls:
+                ProjectUrlDTO(self.db).create(url, project.id)
 
         if project_data.images:
             SupabaseDTO(self.supabase_storage_config).move_files(
@@ -116,10 +118,9 @@ class ProjectDTO:
         if project_data.name:
             validate_unique(self.db, Project, project_data.name)
 
-        if project_data.repo_url:
-            project_data.repo_url = str(project_data.repo_url)
-
-        project_dict = project_data.dict(exclude_unset=True, exclude={"tag_ids"})
+        project_dict = project_data.dict(
+            exclude_unset=True, exclude={"tag_ids", "urls"}
+        )
         if project_dict:
             self.db.update(
                 Project,
@@ -145,6 +146,12 @@ class ProjectDTO:
                 Project, Tag, project_id, project_data.tag_ids, "tags"
             )
 
+        if project_data.urls is not None:
+            ProjectUrlDTO(self.db).delete_all_project_urls(project_id)
+
+            for url in project_data.urls:
+                ProjectUrlDTO(self.db).create(url, project_id)
+
         return self.get_by_id(project_id)
 
     def delete_by_id(self, project_id: UUID) -> None:
@@ -168,18 +175,23 @@ class ProjectDTO:
         This function takes project data and turns it into a ProjectOut object.
 
         Args:
-            project (Any): The project data.
+            project (Project): The project data.
 
         Returns:
             ProjectOut: The parsed project data.
         """
 
         tag_dto = TagDTO(self.db) if project.tags else None
+        url_dto = ProjectUrlDTO(self.db) if project.urls else None
 
         parsed_project = {
             "id": project.id,
             "name": project.name,
-            "repo_url": project.repo_url or None,
+            "urls": (
+                [url_dto.url_parser(url) for url in project.urls]
+                if project.urls
+                else []
+            ),
             "introduction": project.introduction or None,
             "description": project.description or None,
             "tags": (
@@ -195,7 +207,7 @@ class ProjectDTO:
         return ProjectOut(
             id=parsed_project["id"],
             name=parsed_project["name"],
-            repo_url=parsed_project["repo_url"],
+            urls=parsed_project["urls"],
             introduction=parsed_project["introduction"],
             description=parsed_project["description"],
             tags=parsed_project["tags"],
