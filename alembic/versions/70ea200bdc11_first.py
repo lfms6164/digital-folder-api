@@ -1,8 +1,8 @@
-"""init
+"""first
 
-Revision ID: cf73e1861879
+Revision ID: 70ea200bdc11
 Revises: 
-Create Date: 2025-10-02 13:20:12.120021
+Create Date: 2026-03-19 11:03:01.057542
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'cf73e1861879'
+revision: str = '70ea200bdc11'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -43,7 +43,6 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('images', postgresql.ARRAY(sa.String()), nullable=True),
-    sa.Column('repo_url', sa.String(), nullable=True),
     sa.Column('introduction', sa.Text(), nullable=True),
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('created_by', sa.UUID(), nullable=False),
@@ -66,6 +65,15 @@ def upgrade() -> None:
     sa.UniqueConstraint('name')
     )
     op.create_index(op.f('ix_tickets_created_by'), 'tickets', ['created_by'], unique=False)
+    op.create_table('project_urls',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('name', sa.String(), nullable=True),
+    sa.Column('url', sa.String(), nullable=False),
+    sa.Column('project_id', sa.UUID(), nullable=False),
+    sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_project_urls_project_id'), 'project_urls', ['project_id'], unique=False)
     op.create_table('tags',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
@@ -97,6 +105,8 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_tags_group_id'), table_name='tags')
     op.drop_index(op.f('ix_tags_created_by'), table_name='tags')
     op.drop_table('tags')
+    op.drop_index(op.f('ix_project_urls_project_id'), table_name='project_urls')
+    op.drop_table('project_urls')
     op.drop_index(op.f('ix_tickets_created_by'), table_name='tickets')
     op.drop_table('tickets')
     op.drop_index(op.f('ix_projects_created_by'), table_name='projects')
