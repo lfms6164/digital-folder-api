@@ -126,7 +126,7 @@ class TicketDTO:
         This function takes ticket data and turns it into a TicketOut object.
 
         Args:
-            ticket (Any): The ticket data.
+            ticket (Ticket): The ticket data.
 
         Returns:
             GroupOut: The parsed ticket object.

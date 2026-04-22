@@ -121,7 +121,7 @@ class GroupDTO:
         This function takes group data and turns it into a GroupOut object.
 
         Args:
-            group (Any): The group data.
+            group (Group): The group data.
             include_tags (Optional[bool]): Flag to return group with or without tags.
 
         Returns:

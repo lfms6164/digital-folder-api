@@ -123,6 +123,13 @@ def rebuild_db():
                     group=backend,
                     created_by=created_by,
                 )
+                javascript = Tag(
+                    name="JavaScript",
+                    icon="language-javascript",
+                    color="#EFD81D",
+                    group=frontend,
+                    created_by=created_by,
+                )
                 lua = Tag(
                     name="Lua",
                     icon="language-lua",
@@ -212,6 +219,7 @@ def rebuild_db():
                         graphql,
                         html5,
                         java,
+                        javascript,
                         lua,
                         nodejs,
                         postgresql,

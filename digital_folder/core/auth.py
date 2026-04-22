@@ -51,7 +51,7 @@ def validate_unique(db: DbService, model: Type[ModelType], name: str) -> None:
         name (str): The name of the object to be searched in the database.
     """
 
-    item = db.get_by_field(model, name, "name")
+    item = db.get_by_field(model, model.name, name)
     if item:
         raise HTTPException(
             status_code=400,

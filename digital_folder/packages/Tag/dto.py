@@ -118,7 +118,7 @@ class TagDTO:
         This function takes tag data and turns it into a TagOut object.
 
         Args:
-            tag (Any): The tag data.
+            tag (Tag): The tag data.
             include_group (Optional[bool]): Flag to return tag with or without group.
 
         Returns:

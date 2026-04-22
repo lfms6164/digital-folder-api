@@ -2,6 +2,7 @@ import json
 from typing import Optional
 
 from digital_folder.core.pagination.types import QueryParams, SortParam
+from digital_folder.db.models import User
 from digital_folder.db.service import DbService
 from digital_folder.packages.User.schemas import UserRole
 
@@ -42,7 +43,7 @@ def query_params_parser(
                 created_by_role.append(UserRole.VIEWER.value)
 
             parsed_filters["created_by"] = [
-                user_dto.get_by_field(UserRole(role), "role").id
+                user_dto.get_by_field(User.role, UserRole(role)).id
                 for role in created_by_role
             ]
 

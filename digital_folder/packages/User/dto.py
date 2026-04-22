@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import HTTPException
+from sqlalchemy.orm import InstrumentedAttribute
 
 from digital_folder.core.config import project_settings
 from digital_folder.db.models import User
@@ -33,7 +34,7 @@ class UserDTO:
             UserLoginResponse: Contains the JWT access token, its type and the authenticated user.
         """
 
-        user = self.db.get_by_field(User, form_data.username, "username")
+        user = self.db.get_by_field(User, User.username, form_data.username)
         if not user:
             raise HTTPException(
                 status_code=400,
@@ -72,23 +73,23 @@ class UserDTO:
 
         return self.user_parser(user)
 
-    def get_by_field(self, value: str, column_name: str) -> UserOut:
+    def get_by_field(self, column: InstrumentedAttribute, value: str) -> UserOut:
         """
         Retrieve a user by any user field.
 
         Args:
+            column (InstrumentedAttribute): The column to search the value from.
             value (str): The value to get the user.
-            column_name (str): The column to search the value from.
 
         Returns:
             UserOut: The user data.
         """
 
-        user = self.db.get_by_field(User, value, column_name)
+        user = self.db.get_by_field(User, column, value)
         if not user:
             raise HTTPException(
                 status_code=400,
-                detail=f"User: { {column_name: value} } not found.",
+                detail=f"User: { {column: value} } not found.",
             )
 
         return self.user_parser(user)
@@ -99,7 +100,7 @@ class UserDTO:
         This function takes user data and turns it into a UserOut object.
 
         Args:
-            user (Any): The user data.
+            user (User): The user data.
 
         Returns:
             UserOut: The parsed user data.

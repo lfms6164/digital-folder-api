@@ -6,6 +6,7 @@ from jose import jwt, JWTError
 
 from digital_folder.core.config import project_settings
 from digital_folder.db.dependencies import get_db
+from digital_folder.db.models import User
 from digital_folder.db.service import DbService
 from digital_folder.packages.User.dto import UserDTO
 from digital_folder.packages.User.schemas import (
@@ -53,7 +54,7 @@ def validate_user(
     role_config = {
         UserRole.ADMIN: None,
         UserRole.USER: user.id,
-        UserRole.VIEWER: UserDTO(db).get_by_field(UserRole.ADMIN, "role").id,
+        UserRole.VIEWER: UserDTO(db).get_by_field(User.role, UserRole.ADMIN).id,
     }
 
     return UserDb(
