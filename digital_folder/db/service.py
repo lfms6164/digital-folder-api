@@ -2,6 +2,7 @@ from typing import List, Optional, Type
 from uuid import UUID
 
 from sqlalchemy import asc, desc
+from sqlalchemy.orm import InstrumentedAttribute
 
 from digital_folder.core.pagination.types import QueryParams
 from digital_folder.db.db import SessionLocal
@@ -103,27 +104,38 @@ class DbService:
         return self.db.query(model).filter_by(id=obj_id).first()
 
     def get_by_field(
-        self, model: Type[ModelType], value: str, column_name: str
+        self, model: Type[ModelType], column: InstrumentedAttribute, value: str
     ) -> Optional[ModelType]:
         """
         Retrieve a single row by a dynamic field.
 
         Args:
             model (Type[ModelType]): The SQLAlchemy ORM model class to query.
+            column (InstrumentedAttribute): The column to filter by.
             value (str): The value to match.
-            column_name (str): The column name to filter by.
 
         Returns:
             Optional[ModelType]: A single db row, if found, from the provided model.
         """
 
-        column = getattr(model, column_name, None)
-        if column is None:
-            raise AttributeError(
-                f"Model {model.__name__} doesn't have column: '{column_name}'."
-            )
-
         return self.db.query(model).filter(column == value).first()
+
+    def get_all_by_field(
+        self, model: Type[ModelType], column: InstrumentedAttribute, value: str
+    ) -> List[ModelType]:
+        """
+        Retrieve all rows by a dynamic field.
+
+        Args:
+            model (Type[ModelType]): The SQLAlchemy ORM model class to query.
+            column (InstrumentedAttribute): The column to filter by.
+            value (str): The value to match.
+
+        Returns:
+            List[ModelType]: All db rows, if found, from the provided model.
+        """
+
+        return self.db.query(model).filter(column == value).all()
 
     def create(self, model: Type[ModelType], obj_in: dict) -> ModelType:
         """
